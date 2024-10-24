@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 '''
-NMS Server é responsável por:
+NMS ServerTCP é responsável por:
 - Interpretação de Tarefas
 - Apresentação de Métricas
 - Comunicação UDP (NetTask)
@@ -14,18 +14,25 @@ import threading
 
 
 host = '127.0.0.1'
-port = 55555
+port = 55550
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((host, port))
-server.listen()
 
-clients = []
-nicknames = []
-nick = 0
+        ## TCP Server
+serverTCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+serverTCP.bind((host, port))
+serverTCP.listen()
+
+class ServerTCP:
+    def __init__(self, clients, ids, counter):
+        self.clients = clients
+        self.ids = ids
+        self.counter = counter
+        self.lock = threading.Lock()
+
+s = ServerTCP([],[],0)
 
 def broadcast(message):
-    for client in clients:
+    for client in s.clients:
         client.send(message)
 
 def handle(client):
@@ -34,24 +41,29 @@ def handle(client):
             message = client.recv(1024).decode('ascii')
             print(message)
         except:
-            index = clients.index(client)
-            clients.remove(client)
+            index = s.clients.index(client)
+            s.clients.remove(client)
             client.close()
-            nickname = nicknames[index]
+            nickname = s.ids[index]
             broadcast(f'{nickname} left the chat!'.encode('ascii'))
-            nicknames.remove(nickname)
+            s.ids.remove(nickname)
             break
 
 def recieve():
     while True:
-        client, address = server.accept()
+        client, address = serverTCP.accept()
         print(f"Connected with {str(address)}")
 
-        nick =+ 1
-        nicknames.append(nick)
-        clients.append(client)
+        s.lock.acquire()
+        try:
+            s.counter += 1  
+        finally:
+            s.lock.release()
+                
+        s.ids.append(s.counter)
+        s.clients.append(client)
 
-        print(f'Client Nickname is {nick}')
+        print(f'Client Nickname is {s.counter}')
         client.send('Connected to the server'.encode('ascii'))
 
         thread = threading.Thread(target=handle, args=(client,))
