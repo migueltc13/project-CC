@@ -11,11 +11,16 @@ NMS Agent é responsável por:
 '''
 
 import socket
+import sys
 import threading
 
+if (sys.argv[1] is None):
+    ip = '127.0.0.1'
+
+ip = sys.argv[1]
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(('127.0.0.1', 55555))
+client.connect((ip, 55550))
 
 def recieve():
     while True:
