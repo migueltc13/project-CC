@@ -14,28 +14,39 @@ import socket
 import sys
 import threading
 
-if (sys.argv[1] is None):
+if (len(sys.argv) < 2):
     ip = '127.0.0.1'
-
-ip = sys.argv[1]
+else:
+    ip = sys.argv[1]
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((ip, 55550))
+
 
 def recieve():
     while True:
         try:
             message = client.recv(1024).decode('ascii')
+            parser(message)
             print(message)
         except:
             print("An error occurred!")
             client.close()
             break
 
+
 def write():
     while True:
-        message = f'{input("")}'
+        message = input()
+        size = len(message)
+        message = str(size) + message
         client.send(message.encode('ascii'))
+
+
+def parser(message):
+    size = int(message[:4])
+    return message[4:size + 4]
+
 
 recieve_thread = threading.Thread(target=recieve)
 write_thread = threading.Thread(target=write)

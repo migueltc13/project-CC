@@ -12,15 +12,14 @@ NMS ServerTCP é responsável por:
 import socket
 import threading
 
-
 host = '0.0.0.0'
 port = 55550
 
-
-        ## TCP Server
+# TCP Server
 serverTCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serverTCP.bind((host, port))
 serverTCP.listen()
+
 
 class ServerTCP:
     def __init__(self, clients, ids, counter):
@@ -29,17 +28,21 @@ class ServerTCP:
         self.counter = counter
         self.lock = threading.Lock()
 
-s = ServerTCP([],[],0)
+
+s = ServerTCP([], [], 0)
+
 
 def broadcast(message):
     for client in s.clients:
         client.send(message)
 
+
 def handle(client):
     while True:
         try:
             message = client.recv(1024).decode('ascii')
-            print(message)
+            body = parser(message)
+            print(body)
         except:
             index = s.clients.index(client)
             s.clients.remove(client)
@@ -49,6 +52,7 @@ def handle(client):
             s.ids.remove(nickname)
             break
 
+
 def recieve():
     while True:
         client, address = serverTCP.accept()
@@ -56,15 +60,15 @@ def recieve():
 
         s.lock.acquire()
         try:
-            s.counter += 1  
+            s.counter += 1
         finally:
             s.lock.release()
-                
+
         s.ids.append(s.counter)
         s.clients.append(client)
 
         print(f'Client Nickname is {s.counter}')
-        client.send('Connected to the server'.encode('ascii'))
+        # client.send('Connected to the server'.encode('ascii'))
 
         thread = threading.Thread(target=handle, args=(client,))
         thread.start()
@@ -72,8 +76,16 @@ def recieve():
 
 def write():
     while True:
-        message = f'{input("")}'
+        message = input()
+        size = len(message)
+        message = str(size) + message
         broadcast(message.encode('ascii'))
+
+
+def parser(message):
+    size = int(message[:4])
+    return message[4:size + 4]
+
 
 print("Server started...")
 
