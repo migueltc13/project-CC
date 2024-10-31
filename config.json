@@ -1,0 +1,77 @@
+{
+    "tasks": [
+        {
+            "task_id": "task-1",
+            "frequency": 20,
+            "devices": [
+                {
+                    "device_id": "n1",
+                    "device_metrics": {
+                        "cpu_usage": true,
+                        "ram_usage": true,
+                        "interface_stats": ["eth0", "eth1", "eth2"]
+                    },
+                    "link_metrics": {
+                        "bandwidth": {
+                            "enabled": true,
+                            "tool": "iperf",
+                            "mode": "client",
+                            "server_address": "192.168.1.10",
+                            "duration": 10,
+                            "transport": "TCP",
+                            "frequency": 30
+                        },
+                        "jitter": {
+                            "enabled": true,
+                            "tool": "iperf",
+                            "frequency": 30
+                        },
+                        "packet_loss": {
+                            "enabled": true,
+                            "tool": "iperf",
+                            "frequency": 30
+                        },
+                        "latency": {
+                            "enabled": true,
+                            "tool": "ping",
+                            "destination": "192.168.1.1",
+                            "packet_count": 5,
+                            "frequency": 15
+                        }
+                    },
+                    "alertflow_conditions": {
+                        "cpu_usage": 80,
+                        "ram_usage": 90,
+                        "interface_stats": {
+                            "threshold": 2000,
+                            "interfaces": ["eth0", "eth1"]
+                        },
+                        "packet_loss": 5,
+                        "jitter": 100
+                    }
+                },
+                {
+                    "device_id": "n2",
+                    "device_metrics": {
+                        "cpu_usage": true,
+                        "ram_usage": false,
+                        "interface_stats": ["eth0", "eth1"]
+                    },
+                    "link_metrics": {
+                        "latency": {
+                            "enabled": true,
+                            "tool": "ping",
+                            "destination": "192.168.1.2",
+                            "packet_count": 10,
+                            "frequency": 30
+                        }
+                    },
+                    "alertflow_conditions": {
+                        "cpu_usage": 85,
+                        "latency": 50
+                    }
+                }
+            ]
+        }
+    ]
+}
