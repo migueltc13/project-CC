@@ -78,3 +78,7 @@ def select(limit=-1):
         if connection.is_connected():
             cursor.close()
             connection.close()
+
+
+if __name__ == "__main__":
+    init()
