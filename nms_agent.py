@@ -15,7 +15,7 @@ import sys
 import threading
 
 if (len(sys.argv) < 2):
-    ip = '127.0.0.1'
+    ip = '0.0.0.0'
 else:
     ip = sys.argv[1]
 
@@ -27,7 +27,7 @@ def recieve():
     while True:
         try:
             message = client.recv(1024).decode('ascii')
-            parser(message)
+            # parser(message)
             print(message)
         except:
             print("An error occurred!")
