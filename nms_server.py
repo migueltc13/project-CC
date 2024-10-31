@@ -1,96 +1,212 @@
 #!/usr/bin/env python3
 
-'''
-NMS ServerTCP é responsável por:
-- Interpretação de Tarefas
-- Apresentação de Métricas
-- Comunicação UDP (NetTask)
-- Comunicação TCP (AlertFlow)
-- Armazenamento de Dados
-'''
-
 import socket
 import threading
-
-host = '0.0.0.0'
-port = 55550
-
-# TCP Server
-serverTCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serverTCP.bind((host, port))
-serverTCP.listen()
+import json
+import os
+import sys
+import argparse
+import database as db
 
 
-class ServerTCP:
-    def __init__(self, clients, ids, counter):
-        self.clients = clients
-        self.ids = ids
-        self.counter = counter
-        self.lock = threading.Lock()
+###
+# Constants
+###
+
+# Server ports
+TCP_PORT = 5000  # AlertFlow
+UDP_PORT = 6000  # NetTask
+
+# Maximum number of clients in the TCP server queue
+TCP_CLIENTS_QUEUE_SIZE = 8
+
+# Buffer size is set as the usual MTU size
+BUFFER_SIZE = 1500  # bytes
 
 
-s = ServerTCP([], [], 0)
+###
+# Configuration
+###
+
+def load_config(config_path="config.json"):
+    if not os.path.exists(config_path):
+        return None
+    with open(config_path, 'r') as config_file:
+        config = json.load(config_file)
+    return config
 
 
-def broadcast(message):
-    for client in s.clients:
-        client.send(message)
+###
+# Server Classes
+###
+
+class ServerUI:
+    def __init__(self):
+        self.running = True
+
+    def display_title(self):
+        print("========================================")
+        print("    Network Management System Server    ")
+        print("========================================")
+
+    def save_status(self, message):
+        db.insert(db.LogType.STATUS, message)
+
+    def save_alert(self, message):
+        db.insert(db.LogType.ALERT, message)
+
+    def save_metric(self, data):
+        db.insert(db.LogType.METRIC, data)
+
+    def display_info(self, message):
+        print(f"[INFO] {message}")
+
+    def display_error(self, message):
+        print(f"[ERROR] {message}")
+
+    def display_tasks(self, tasks):
+        print("[CONFIGURATION] Loaded Tasks:")
+        print(json.dumps(tasks, indent=2))
+
+    def display_menu(self):
+        print()
+        print("Menu")
+        print("1. Display Loaded Tasks")
+        print("2. View Real-Time Alerts and Metrics")
+        print("3. View Connection Status")
+        print("4. Shutdown Server")
+
+    def handle_menu_choice(self, choice, tcp_server, udp_server, config):
+        match choice:
+            case 1:
+                self.display_tasks(config["tasks"])
+            case 2:
+                self.display_info("Listening for real-time alerts and metrics...")
+                # TODO real-time metrics display logic
+            case 3:
+                self.display_info("Displaying connection status...")
+                # TODO connection status display
+            case 4:
+                self.display_info("Shutting down server...")
+                tcp_server.shutdown()
+                udp_server.shutdown()
+                self.running = False
+            case _:
+                self.display_error("Invalid choice. Please try again.")
+
+    def main_menu(self, tcp_server, udp_server, config):
+        while self.running:
+            self.display_menu()
+            try:
+                choice = int(input("Enter your choice: "))
+                self.handle_menu_choice(choice, tcp_server, udp_server, config)
+            except ValueError:
+                self.display_error("Invalid input. Please enter a number.")
 
 
-def handle(client):
-    while True:
-        try:
-            message = client.recv(1024).decode('ascii')
-            body = parser(message)
-            print(body)
-        except:
-            index = s.clients.index(client)
-            s.clients.remove(client)
-            client.close()
-            nickname = s.ids[index]
-            broadcast(f'{nickname} left the chat!'.encode('ascii'))
-            s.ids.remove(nickname)
-            break
+# TCP Server for AlertFlow
+class TCPServer(threading.Thread):
+    def __init__(self, ui, host='0.0.0.0', port=TCP_PORT):
+        super().__init__(daemon=True)
+        self.host = host
+        self.port = port
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.shutdown_flag = threading.Event()
+        self.ui = ui
+
+    def run(self):
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(TCP_CLIENTS_QUEUE_SIZE)
+        self.ui.save_status(f"TCP Server started on port {self.port}")
+        while not self.shutdown_flag.is_set():
+            try:
+                self.server_socket.settimeout(1.0)
+                client_socket, addr = self.server_socket.accept()
+                self.ui.save_status(f"Connection from {addr}")
+                threading.Thread(target=self.handle_client, args=(client_socket,)).start()
+            except socket.timeout:
+                pass
+            except OSError:
+                break
+
+    def handle_client(self, client_socket):
+        with client_socket:
+            while not self.shutdown_flag.is_set():
+                try:
+                    data = client_socket.recv(BUFFER_SIZE)
+                    if not data:
+                        break
+                    alert_message = data.decode()
+                    self.ui.save_alert(alert_message)
+                except socket.timeout:
+                    pass
+
+    def shutdown(self):
+        self.shutdown_flag.set()
+        self.server_socket.close()
 
 
-def recieve():
-    while True:
-        client, address = serverTCP.accept()
-        print(f"Connected with {str(address)}")
+# UDP Server for NetTask
+class UDPServer(threading.Thread):
+    def __init__(self, ui, host='0.0.0.0', port=UDP_PORT):
+        super().__init__(daemon=True)
+        self.host = host
+        self.port = port
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.ui = ui
+        self.shutdown_flag = threading.Event()
 
-        s.lock.acquire()
-        try:
-            s.counter += 1
-        finally:
-            s.lock.release()
+    def run(self):
+        self.server_socket.bind((self.host, self.port))
+        self.ui.save_status(f"UDP Server started on port {self.port}")
+        while not self.shutdown_flag.is_set():
+            try:
+                self.server_socket.settimeout(1.0)
+                data, addr = self.server_socket.recvfrom(BUFFER_SIZE)
+                metric_data = data.decode()
+                self.ui.save_metric(f"Metric data from {addr}: {metric_data}")
+            except socket.timeout:
+                continue
+            except OSError:
+                break
 
-        s.ids.append(s.counter)
-        s.clients.append(client)
-
-        print(f'Client Nickname is {s.counter}')
-        # client.send('Connected to the server'.encode('ascii'))
-
-        thread = threading.Thread(target=handle, args=(client,))
-        thread.start()
-
-
-def write():
-    while True:
-        message = input()
-        size = len(message)
-        message = str(size) + message
-        broadcast(message.encode('ascii'))
-
-
-def parser(message):
-    size = int(message[:4])
-    return message[4:size + 4]
+    def shutdown(self):
+        self.shutdown_flag.set()
+        self.server_socket.close()
 
 
-print("Server started...")
+###
+# Main
+###
 
-recieve_thread = threading.Thread(target=recieve)
-write_thread = threading.Thread(target=write)
+def main():
+    parser = argparse.ArgumentParser(description="Network Management System Server")
+    parser.add_argument("--config", "-c", help="Configuration file path", default="config.json")
+    args = parser.parse_args()
 
-recieve_thread.start()
-write_thread.start()
+    config = load_config(args.config)
+    if config is None:
+        print("Failed to load configuration. Exiting.")
+        sys.exit(1)
+
+    ui = ServerUI()
+    ui.display_title()
+
+    tcp_server = TCPServer(ui)
+    udp_server = UDPServer(ui)
+
+    tcp_server.start()
+    udp_server.start()
+
+    try:
+        ui.main_menu(tcp_server, udp_server, config)
+    except KeyboardInterrupt:
+        ui.display_info("Server interrupted. Shutting down...")
+    finally:
+        tcp_server.shutdown()
+        udp_server.shutdown()
+        ui.save_status("Server shutdown complete.")
+
+
+if __name__ == "__main__":
+    main()
