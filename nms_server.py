@@ -41,29 +41,30 @@ def load_config(config_path):
 ###
 
 class ServerUI:
-    def __init__(self):
+    def __init__(self, server_hostname):
         self.running = True
         self.view_mode = False  # Real-time view mode
+        self.server_hostname = server_hostname
 
     def display_title(self):
         print("========================================")
         print("    Network Management System Server    ")
         print("========================================")
 
-    def save_status(self, message):
-        db.insert(db.log_type.STATUS, message)
+    def save_status(self, hostname, message):
+        db.operation.insert(db.values.log_type.STATUS, hostname, message)
         if self.view_mode:
-            print(f"[STATUS] {message}")
+            print(f"[STATUS] ({hostname}) {message}")
 
-    def save_alert(self, message):
-        db.insert(db.log_type.ALERT, message)
+    def save_alert(self, hostname, message):
+        db.operation.insert(db.values.log_type.ALERT,  hostname, message)
         if self.view_mode:
-            print(f"[ALERT] {message}")
+            print(f"[ALERT]  ({hostname}) {message}")
 
-    def save_metric(self, data):
-        db.insert(db.log_type.METRIC, data)
+    def save_metric(self, hostname, message):
+        db.operation.insert(db.values.log_type.METRIC, hostname, message)
         if self.view_mode:
-            print(f"[METRIC] {data}")
+            print(f"[METRIC] ({hostname}) {message}")
 
     def display_info(self, message):
         print(f"[INFO] {message}")
@@ -118,27 +119,28 @@ class ServerUI:
 class TCPServer(threading.Thread):
     def __init__(self, ui, host='0.0.0.0', port=C.TCP_PORT):
         super().__init__(daemon=True)
+        self.ui = ui
         self.host = host
         self.port = port
+        self.server_hostname = ui.server_hostname
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.shutdown_flag = threading.Event()
-        self.ui = ui
 
         # Start the TCP server
         try:
             self.server_socket.bind((self.host, self.port))
             self.server_socket.listen(TCP_CLIENTS_QUEUE_SIZE)
-            self.ui.save_status(f"TCP Server started on port {self.port}")
         except OSError:
             self.ui.display_error(f"TCP port {self.port} is already in use. Exiting.")
             sys.exit(1)
+        self.ui.save_status(self.server_hostname, f"TCP Server started on port {self.port}")
 
     def run(self):
         while not self.shutdown_flag.is_set():
             try:
                 self.server_socket.settimeout(1.0)
                 client_socket, addr = self.server_socket.accept()
-                self.ui.save_status(f"Connection from {addr}")
+                self.ui.save_status("TODO", f"Connection from {addr}")
                 threading.Thread(target=self.handle_client, args=(client_socket,)).start()
             except socket.timeout:
                 pass
@@ -154,7 +156,7 @@ class TCPServer(threading.Thread):
                     if not data:
                         break
                     alert_message = data.decode()
-                    self.ui.save_alert(alert_message)
+                    self.ui.save_alert("TODO", alert_message)
                 except socket.timeout:
                     pass
 
@@ -167,19 +169,20 @@ class TCPServer(threading.Thread):
 class UDPServer(threading.Thread):
     def __init__(self, ui, host='0.0.0.0', port=C.UDP_PORT):
         super().__init__(daemon=True)
+        self.ui = ui
         self.host = host
         self.port = port
+        self.server_hostname = ui.server_hostname
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.ui = ui
         self.shutdown_flag = threading.Event()
 
         # Start the UDP server
         try:
             self.server_socket.bind((self.host, self.port))
-            self.ui.save_status(f"UDP Server started on port {self.port}")
         except OSError:
             self.ui.display_error(f"UDP port {self.port} is already in use. Exiting.")
             sys.exit(1)
+        self.ui.save_status(self.server_hostname, f"UDP Server started on port {self.port}")
 
     def run(self):
         while not self.shutdown_flag.is_set():
@@ -187,7 +190,7 @@ class UDPServer(threading.Thread):
                 self.server_socket.settimeout(1.0)
                 data, addr = self.server_socket.recvfrom(BUFFER_SIZE)
                 metric_data = data.decode()
-                self.ui.save_metric(f"Metric data from {addr}: {metric_data}")
+                self.ui.save_metric("TODO", f"Metric data from {addr}: {metric_data}")
             except socket.timeout:
                 continue
             except OSError:
@@ -212,7 +215,9 @@ def main():
         print("Failed to load configuration. Exiting.")
         sys.exit(1)
 
-    ui = ServerUI()
+    server_hostname = socket.gethostname()
+
+    ui = ServerUI(server_hostname)
     ui.display_title()
 
     tcp_server = TCPServer(ui)
@@ -228,7 +233,7 @@ def main():
     finally:
         tcp_server.shutdown()
         udp_server.shutdown()
-        ui.save_status("Server shutdown complete.")
+        ui.save_status(server_hostname, "Server shutdown complete.")
 
 
 if __name__ == "__main__":
