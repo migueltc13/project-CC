@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
+
 import mysql.connector
 from mysql.connector import Error
 
 
-class LogType:
+class log_type:
     STATUS = 1
     ALERT = 2
     METRIC = 3
