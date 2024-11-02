@@ -7,15 +7,12 @@ import os
 import sys
 import argparse
 import database as db
+import constants as C
 
 
 ###
 # Constants
 ###
-
-# Server ports
-TCP_PORT = 5000  # AlertFlow
-UDP_PORT = 6000  # NetTask
 
 # Maximum number of clients in the TCP server queue
 TCP_CLIENTS_QUEUE_SIZE = 8
@@ -50,13 +47,13 @@ class ServerUI:
         print("========================================")
 
     def save_status(self, message):
-        db.insert(db.LogType.STATUS, message)
+        db.insert(db.log_type.STATUS, message)
 
     def save_alert(self, message):
-        db.insert(db.LogType.ALERT, message)
+        db.insert(db.log_type.ALERT, message)
 
     def save_metric(self, data):
-        db.insert(db.LogType.METRIC, data)
+        db.insert(db.log_type.METRIC, data)
 
     def display_info(self, message):
         print(f"[INFO] {message}")
@@ -106,7 +103,7 @@ class ServerUI:
 
 # TCP Server for AlertFlow
 class TCPServer(threading.Thread):
-    def __init__(self, ui, host='0.0.0.0', port=TCP_PORT):
+    def __init__(self, ui, host='0.0.0.0', port=C.TCP_PORT):
         super().__init__(daemon=True)
         self.host = host
         self.port = port
@@ -133,6 +130,7 @@ class TCPServer(threading.Thread):
         with client_socket:
             while not self.shutdown_flag.is_set():
                 try:
+                    # TODO format alert message
                     data = client_socket.recv(BUFFER_SIZE)
                     if not data:
                         break
@@ -148,7 +146,7 @@ class TCPServer(threading.Thread):
 
 # UDP Server for NetTask
 class UDPServer(threading.Thread):
-    def __init__(self, ui, host='0.0.0.0', port=UDP_PORT):
+    def __init__(self, ui, host='0.0.0.0', port=C.UDP_PORT):
         super().__init__(daemon=True)
         self.host = host
         self.port = port
