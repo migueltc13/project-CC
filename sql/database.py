@@ -1,86 +1,149 @@
 #!/usr/bin/env python3
 
-import mysql.connector
-from mysql.connector import Error
+from os import path
+from contextlib import contextmanager
+import mysql.connector as connector
+from mysql.connector import errors
+
+# Get the directory with the database files
+db_dir = path.join(path.dirname(path.abspath(__file__)), "")
 
 
-class log_type:
-    STATUS = 1
-    ALERT = 2
-    METRIC = 3
-
-
+# Establish a connection to the MySQL database
 def connect():
-    return mysql.connector.connect(
-            user='root',
-            password='root',
-            host='127.0.0.1',
-            database='NMS',
-            ssl_disabled=True)
+    try:
+        return connector.connect(
+            user="root",
+            password="root",
+            host="127.0.0.1",
+            database="NMS",
+            ssl_disabled=True
+        )
+    except errors.Error as e:
+        raise RuntimeError(f"Error connecting to the database: {e}")
 
 
-def init():
+# Provides a cursor within a context manager, ensuring cleanup on exit
+@contextmanager
+def get_cursor():
     connection = connect()
-    cursor = connection.cursor()
-
-    # Create table log_type
-    cursor.execute("CREATE TABLE IF NOT EXISTS log_type ("
-                   "id INT PRIMARY KEY, "
-                   "designation VARCHAR(255) NOT NULL);")
-
-    # Populate table log_type
-    cursor.execute("INSERT INTO log_type (id, designation) VALUES"
-                   "(1, 'STATUS'),"
-                   "(2, 'ALERT'),"
-                   "(3, 'METRIC');")
-
-    # Create table log
-    cursor.execute("CREATE TABLE IF NOT EXISTS log ("
-                   "id INT AUTO_INCREMENT PRIMARY KEY, "
-                   "type INT, "
-                   "timestamp DATETIME, "
-                   "message TEXT, "
-                   "FOREIGN KEY (type) REFERENCES log_type(id));")
-
-    connection.commit()
-    cursor.close()
-    connection.close()
-
-
-def insert(log_type_id, message):
-    try:
-        connection = connect()
+    if connection is None:
+        yield None
+    else:
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO log (type, timestamp, message) VALUES (%s, NOW(), %s);",
-                       (log_type_id, message))
-        connection.commit()
-    except Error as e:
-        print(f"Error: {e}")
-    finally:
-        if connection.is_connected():
+        try:
+            yield cursor
+            connection.commit()
+        except errors.Error as e:
+            raise RuntimeError(f"Database operation failed: {e}")
+            connection.rollback()
+        finally:
             cursor.close()
             connection.close()
 
 
-def select(limit=-1):
-    try:
-        connection = connect()
-        cursor = connection.cursor()
+# Define the database operations for initializing, inserting, and selecting logs
+# as well as printing log entries
+class operation:
+    # Initialize the database tables and populate "log_type" table
+    @staticmethod
+    def init():
+        with get_cursor() as cursor:
+            if cursor is None:
+                raise RuntimeError("Failed to obtain database cursor for initialization")
 
-        if limit == -1:
-            cursor.execute("SELECT * FROM log;")
-        else:
-            cursor.execute("SELECT * FROM log LIMIT %s;", (limit,))
+            try:
+                # Create tables "log_type" and "log"
+                with open(path.join(db_dir, "create/log_type.sql"), "r") as f:
+                    cursor.execute(f.read())
 
-        result = cursor.fetchall()
-        return result
-    except Error as e:
-        print(f"Error: {e}")
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+                with open(path.join(db_dir, "create/log.sql"), "r") as f:
+                    cursor.execute(f.read())
+
+                # Populate table "log_type"
+                with open(path.join(db_dir, "populate/log_type.sql"), "r") as f:
+                    cursor.execute(f.read())
+
+            except (FileNotFoundError, errors.Error) as e:
+                raise RuntimeError(f"Error initializing the database: {e}")
+
+    # Insert a log entry into the database
+    @staticmethod
+    def insert(log_type_id, hostname, message):
+        if (
+            not isinstance(log_type_id, int) or
+            not isinstance(hostname, str) or
+            not isinstance(message, str)
+        ):
+            raise RuntimeError("Invalid input data type(s)")
+
+        with get_cursor() as cursor:
+            if cursor is None:
+                raise RuntimeError("Failed to obtain database cursor for insertion")
+
+            try:
+                with open(path.join(db_dir, "queries/insert.sql"), "r") as f:
+                    cursor.execute(f.read(), (log_type_id, hostname, message))
+
+            except (FileNotFoundError, errors.Error) as e:
+                raise RuntimeError(f"Error inserting log: {e}")
+
+    # Select log entries with an optional limit
+    @staticmethod
+    def select(limit=-1):
+        if not isinstance(limit, int) or limit < -1:
+            raise RuntimeError("Invalid limit value")
+
+        query_limit = "LIMIT %s" % limit if limit > 0 else ""
+
+        with get_cursor() as cursor:
+            if cursor is None:
+                raise RuntimeError("Failed to obtain database cursor for selection")
+
+            try:
+                with open(path.join(db_dir, "queries/select.sql"), "r") as file:
+                    query = file.read().replace("{LIMIT}", query_limit)
+                    cursor.execute(query)
+                    result = cursor.fetchall()
+                    return result
+            except (FileNotFoundError, errors.Error) as e:
+                raise RuntimeError(f"Error selecting logs: {e}")
+
+    # Print a log entry
+    @staticmethod
+    def print_log(log):
+        nr, log_type, timestamp, hostname, message = log
+
+        # Fill atrributes with spaces to align the output
+        nr = str(nr).rjust(4)
+        log_type = log_type.ljust(6)
+        hostname = hostname.ljust(8)
+
+        print(f"{nr} | {log_type} | {timestamp} | {hostname} | {message}")
+
+    # Print log entries
+    @staticmethod
+    def print_logs(logs):
+        print(" Nr  | Type   | Timestamp           | Host     | Message")
+        print("-----|--------|---------------------|----------|---------------------")
+        for log in logs:
+            operation.print_log(log)
+
+        print("Displayed %d log entries" % len(logs))
+
+
+class values:
+    # Holds the log type constant values
+    class log_type:
+        STATUS = 1
+        ALERT = 2
+        METRIC = 3
 
 
 if __name__ == "__main__":
-    init()
+    try:
+        print("Initializing database...")
+        operation.init()
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {e}")

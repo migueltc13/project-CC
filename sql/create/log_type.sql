@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS log_type (
+    id INT PRIMARY KEY,
+    designation NVARCHAR(255) NOT NULL
+);

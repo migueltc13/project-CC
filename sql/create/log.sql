@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS log (
+    nr INT AUTO_INCREMENT PRIMARY KEY,
+    type INT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    hostname NVARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    FOREIGN KEY (type) REFERENCES log_type(id)
+);
