@@ -1,1 +1,4 @@
+# Ignore .pyc files
 __pycache__/
+sql/__pycache__/
+protocol/__pycache__/
