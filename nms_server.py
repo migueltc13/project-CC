@@ -121,10 +121,16 @@ class TCPServer(threading.Thread):
         self.shutdown_flag = threading.Event()
         self.ui = ui
 
+        # Start the TCP server
+        try:
+            self.server_socket.bind((self.host, self.port))
+            self.server_socket.listen(TCP_CLIENTS_QUEUE_SIZE)
+            self.ui.save_status(f"TCP Server started on port {self.port}")
+        except OSError:
+            self.ui.display_error(f"TCP port {self.port} is already in use. Exiting.")
+            sys.exit(1)
+
     def run(self):
-        self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen(TCP_CLIENTS_QUEUE_SIZE)
-        self.ui.save_status(f"TCP Server started on port {self.port}")
         while not self.shutdown_flag.is_set():
             try:
                 self.server_socket.settimeout(1.0)
@@ -164,9 +170,15 @@ class UDPServer(threading.Thread):
         self.ui = ui
         self.shutdown_flag = threading.Event()
 
+        # Start the UDP server
+        try:
+            self.server_socket.bind((self.host, self.port))
+            self.ui.save_status(f"UDP Server started on port {self.port}")
+        except OSError:
+            self.ui.display_error(f"UDP port {self.port} is already in use. Exiting.")
+            sys.exit(1)
+
     def run(self):
-        self.server_socket.bind((self.host, self.port))
-        self.ui.save_status(f"UDP Server started on port {self.port}")
         while not self.shutdown_flag.is_set():
             try:
                 self.server_socket.settimeout(1.0)
