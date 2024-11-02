@@ -40,6 +40,7 @@ def load_config(config_path="config.json"):
 class ServerUI:
     def __init__(self):
         self.running = True
+        self.view_mode = False  # Real-time view mode
 
     def display_title(self):
         print("========================================")
@@ -48,12 +49,18 @@ class ServerUI:
 
     def save_status(self, message):
         db.insert(db.log_type.STATUS, message)
+        if self.view_mode:
+            print(f"[STATUS] {message}")
 
     def save_alert(self, message):
         db.insert(db.log_type.ALERT, message)
+        if self.view_mode:
+            print(f"[ALERT] {message}")
 
     def save_metric(self, data):
         db.insert(db.log_type.METRIC, data)
+        if self.view_mode:
+            print(f"[METRIC] {data}")
 
     def display_info(self, message):
         print(f"[INFO] {message}")
@@ -69,7 +76,7 @@ class ServerUI:
         print()
         print("Menu")
         print("1. Display Loaded Tasks")
-        print("2. View Real-Time Alerts and Metrics")
+        print("2. View Real-Time Events")
         print("3. View Connection Status")
         print("4. Shutdown Server")
 
@@ -78,8 +85,11 @@ class ServerUI:
             case 1:
                 self.display_tasks(config["tasks"])
             case 2:
-                self.display_info("Listening for real-time alerts and metrics...")
-                # TODO real-time metrics display logic
+                self.display_info("Listening for real-time connections, alerts and metrics...\n"
+                                  "Press Enter to return to the main menu.")
+                self.view_mode = True
+                input()
+                self.view_mode = False
             case 3:
                 self.display_info("Displaying connection status...")
                 # TODO connection status display
