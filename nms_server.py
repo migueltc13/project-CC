@@ -6,7 +6,7 @@ import json
 import os
 import sys
 import argparse
-import database as db
+import sql.database as db
 import constants as C
 
 
