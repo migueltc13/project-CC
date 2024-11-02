@@ -11,7 +11,7 @@ import constants as C
 
 
 ###
-# Constants
+# Local Constants
 ###
 
 # Maximum number of clients in the TCP server queue
@@ -20,12 +20,15 @@ TCP_CLIENTS_QUEUE_SIZE = 8
 # Buffer size is set as the usual MTU size
 BUFFER_SIZE = 1500  # bytes
 
+# Default configuration file path
+CONFIG_PATH = "config/config.json"
+
 
 ###
 # Configuration
 ###
 
-def load_config(config_path="config.json"):
+def load_config(config_path):
     if not os.path.exists(config_path):
         return None
     with open(config_path, 'r') as config_file:
@@ -201,7 +204,7 @@ class UDPServer(threading.Thread):
 
 def main():
     parser = argparse.ArgumentParser(description="Network Management System Server")
-    parser.add_argument("--config", "-c", help="Configuration file path", default="config.json")
+    parser.add_argument("--config", "-c", help="Configuration file path", default=CONFIG_PATH)
     args = parser.parse_args()
 
     config = load_config(args.config)
