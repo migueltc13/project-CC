@@ -28,7 +28,6 @@
 %% Load default geometry with:
 % \loadgeometry{default}
 
-
 %===============================================================================
 % BEGIN ABSTRACT PAGE
 %===============================================================================
@@ -50,7 +49,6 @@
 %===============================================================================
 % END ABSTRACT PAGE
 %===============================================================================
-
 
 %===============================================================================
 % BEGIN INDEXES PAGES
@@ -74,7 +72,6 @@
 \lstlistoflistings
 \pagebreak
 
-
 %===============================================================================
 % END INDEXES PAGES
 %===============================================================================
@@ -82,26 +79,103 @@
 \pagenumbering{arabic}
 
 %===============================================================================
-% BEGIN DESENVOLVIMENTO
+% BEGIN ARQUITETURA DA SOLUÇÃO
 %===============================================================================
 
-\chapter{Desenvolvimento}
+\chapter{Arquitetura da Solução}
+
+\textcolor{red}{
+    Dúvida: o diagrama da arquitetura da solução deve ser
+    mais geral ou mais específico à solução (python) desenvolvida?
+}
 
 %===============================================================================
-% END DESENVOLVIMENTO
+% END ARQUITETURA DA SOLUÇÃO
 %===============================================================================
 
 %===============================================================================
-% BEGIN CONCLUSÃO
+% BEGIN ESPECIFICACÕES DOS PROTOCOLOS APLICACIONAIS
 %===============================================================================
 
-\chapter{Conclusão}
+\chapter{Especificações dos Protocolos Aplicacionais}
+
+\section{\textit{AlertFlow}}
+
+\subsection{Formato de Mensagem}
+
+\subsection{Diagrama de Sequência}
+
+\begin{itemize}
+    \item Normal
+\end{itemize}
+
+\section{\textit{NetTask}}
+
+\subsection{Formato de Mensagem}
+
+\subsection{Diagramas de Sequências}
+
+\begin{itemize}
+    \item Normal
+    \item Retransmission
+    \item Controlo de Fluxo
+\end{itemize}
 
 %===============================================================================
-% END CONCLUSÃO
+% END PROTOCOLOS APLICACIONAIS
 %===============================================================================
 
+%===============================================================================
+% BEGIN IMPLEMENTAÇÃO
+%===============================================================================
 
+\chapter{Implementação}
+
+\section{\textcolor{red}{Estrutura do Projeto?}}
+
+\section{Parâmetros dos Executáveis}
+
+\section{Ficheiro de Configuração}
+
+\section{Bibliotecas Utilizadas}
+
+\textcolor{red}{
+    Dúvida: deve-se referir todas as bibliotecas utilizadas no desenvolvimento? \\
+    por exemplo: \textit{socket}, \textit{os}, \textit{sys}, \textit{threading}, etc
+}
+
+\section{\textcolor{red}{Detalhes Técnicos? Maybe}}
+
+%===============================================================================
+% END IMPLEMENTAÇÃO
+%===============================================================================
+
+%===============================================================================
+% BEGIN TESTES E RESULTADOS
+%===============================================================================
+
+\chapter{Testes e Resultados}
+
+\textcolor{red}{
+    Para além da testagem manual contínua ao longo do desenvolvimento, foram
+    desenvolvidos testes unitários para as classes e funções mais críticas do
+    sistema. Estes testes foram desenvolvidos com recurso à biblioteca
+    \textit{unittest} do Python.
+}
+
+%===============================================================================
+% END TESTES E RESULTADOS
+%===============================================================================
+
+%===============================================================================
+% BEGIN CONCLUSÕES E TRABALHO FUTURO
+%===============================================================================
+
+\chapter{Conclusões e Trabalho Futuro}
+
+%===============================================================================
+% END CONCLUSÕES E TRABALHO FUTURO
+%===============================================================================
 
 %===============================================================================
 % BEGIN REFERÊNCIAS
@@ -112,11 +186,13 @@
 
 %% https://www.overleaf.com/learn/latex/bibliography_management_with_bibtex
 \begin{thebibliography}{9}
-\bibitem{DatabaseSystems}
-Connolly, T., \& Begg, C. (2015). Database Systems: A Practical Approach to Design, Implementation, and Management (6th ed.). Pearson Education. London, UK.
 
-\bibitem{MySQLManual}
-MySQL 8.0 Reference Manual (2024). \href{https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html}{MySQL 8.0 Reference Manual: Data Type Storage Requirements}. MySQL, Oracle.
+\bibitem{DatabaseSystems}
+Connolly, T., \& Begg, C. (2015). Database Systems: Example (6th ed.). Pearson Education. London, UK.
+
+% \bibitem{MySQLManual}
+% MySQL 8.0 Reference Manual (2024). \href{https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html}{MySQL 8.0 Reference Manual: Data Type Storage Requirements}. MySQL, Oracle.
+
 \end{thebibliography}
 
 %% Add bibliografia to index
@@ -124,28 +200,6 @@ MySQL 8.0 Reference Manual (2024). \href{https://dev.mysql.com/doc/refman/8.0/en
 
 %===============================================================================
 % END REFERÊNCIAS
-%===============================================================================
-
-%===============================================================================
-% BEGIN LISTA DE SIGLAS E ACRÓNIMOS
-%===============================================================================
-
-%% Portuguese babel does not translate this environment
-\renewcommand{\nomname}{Lista de Siglas e Acrónimos}
-
-%% Text that can be shown before acronyms list
-% \renewcommand{\nompreamble}{<<Texto exemplo>>}
-
-%% acronyms
-\nomenclature[01]{\textbf{BD}}{Base de Dados}
-\nomenclature[02]{OLTP}{On-Line Analytical Processing}
-\nomenclature[03]{...}{...}
-
-%% Show acronyms
-\printnomenclature
-
-%===============================================================================
-% END LISTA DE SIGLAS E ACRÓNIMOS
 %===============================================================================
 
 %===============================================================================
@@ -163,6 +217,5 @@ MySQL 8.0 Reference Manual (2024). \href{https://dev.mysql.com/doc/refman/8.0/en
 %===============================================================================
 % END ANEXOS
 %===============================================================================
-
 
 \end{document}
