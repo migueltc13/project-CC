@@ -2,3 +2,16 @@
 __pycache__/
 sql/__pycache__/
 protocol/__pycache__/
+
+report/output/*.log
+report/output/*.aux
+report/output/*.lof
+report/output/*.lot
+report/output/*.lol
+report/output/*.toc
+report/output/*.out
+report/output/*.ilg
+report/output/*.nls
+report/output/*.nlo
+report/output/*.fdb_latexmk
+report/output/*.fls

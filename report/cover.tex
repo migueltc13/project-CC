@@ -1,0 +1,137 @@
+\definecolor{titlepagecolor}{RGB}{37,64,56}
+
+%==========================================================================
+% COLORED BAR ON THE LEFT SIDE
+%==========================================================================
+
+\backgroundsetup{
+    scale=1,
+    angle=0,
+    opacity=1,
+    contents={
+        \begin{tikzpicture}[remember picture,overlay]
+            \path [fill=titlepagecolor] (-10.5,-15) rectangle ++ (5,30);
+            \node[color=white] at (-6.70,-11.5) {\bfseries {\fontsize{120}{60} \textsf{C}}};
+            \node[color=titlepagecolor] at (-4.40,-11.5) {\bfseries {\fontsize{120}{60} \textsf{C}}};
+        \end{tikzpicture}
+    }
+}
+
+%==========================================================================
+% COVER PAGE CONTENT
+%==========================================================================
+
+\title{\LARGE{Network Monitoring System}}
+
+\author{
+    Flávia Alexandra da Silva Araújo (A96587)\\ \quad
+    Joshua David Amaral Moreira (A105684)\\ \quad
+    Miguel Torres Carvalho (A95485)\\ \quad
+}
+
+%% Date
+\date{\today}
+
+%% Course
+\newcommand{\Course}{Licenciatura em Engenharia Informática}
+
+%% Department
+\newcommand{\Department}{Escola de Engenharia}
+
+%% UniName
+\newcommand{\UniName}{Universidade do Minho}
+
+%% UniPic
+\newcommand{\UniPic}{\includegraphics[width=120pt]{img/eeum.png}}
+
+%% University
+\newcommand{\University}{
+    \begin{flushleft}
+        \UniPic
+    \end{flushleft}
+    \textcolor{gray}{\small\textbf{\textsf{\UniName}}}\par
+    \textcolor{gray!80!white}{\small{\textsf{\Department}}}\par
+    \textcolor{gray!70!white}{\small{\textsf{\Course}}}
+}
+
+%% UC
+\newcommand{\UC}{
+    \begin{flushleft}
+        \par\textcolor{titlepagecolor}{\Large\textbf{\textsf{Comunicações Por Computador}}}
+    \end{flushleft}
+}
+
+%% Project Phase
+\newcommand{\SubTitle}{
+    \begin{flushleft}
+        \large\textbf{Trabalho Prático 2}
+    \end{flushleft}
+}
+
+%% Group Info
+\newcommand{\GroupInfo}{\par Grupo 10 - PL1}
+
+%% GitHub Repo
+\newcommand{\GitHubRepo}{\par\url{https://github.com/migueltc13/CC-tp2}}
+
+%% School Year
+\newcommand{\SchoolYear}{
+    \par\small{\textsf{Ano Letivo de 2024/2025}}
+}
+
+%% Define new command to show title, author and date
+\makeatletter
+\let\Title\@title
+\let\Author\@author
+\let\Date\@date
+\makeatother
+
+%==========================================================================
+% BEGIN COVER PAGE
+%==========================================================================
+
+%% Make cover page
+\newcommand{\makecover}{
+
+%% Removes page number on footer
+\thispagestyle{empty}
+
+%% No indentation
+\setlength{\parindent}{0em}
+
+%% Put Background defined on \backgroundsetup, in this page
+\BgThispage
+
+%% Changing geometry to prevent overlay with text
+%% At the end of back cover, geometry is default with \restoregeometry
+\newgeometry{top=4cm,left=6cm,right=2cm,bottom=2cm}
+
+%% builds university info defined previously
+\University
+\vspace{1cm}
+\UC
+\SubTitle
+\SchoolYear
+
+\vspace*{4cm}
+%% bigger space (i think its the default one) between paragraphs
+\setlength{\parskip}{1em}
+
+%% builds title info defined previously
+\par\textbf{\textsf{\huge\Title}}
+\vspace{1cm}
+%% builds author(s) info defined previously
+\par\Author
+
+\vspace{0.5cm}
+
+%% builds date info defined previously
+\par\Date
+\restoregeometry
+\pagebreak
+
+}
+
+%==========================================================================
+% END COVER PAGE
+%==========================================================================

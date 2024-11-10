@@ -1,0 +1,168 @@
+%===============================================================================
+% DOCUMENT
+%===============================================================================
+
+%% Document class
+\documentclass[a4paper,12pt]{scrreprt}
+
+%% Include packages
+\usepackage{packages}
+
+\begin{document}
+
+%% Include custom commands
+\include{commands}
+
+\pagenumbering{gobble}
+
+%% Build cover
+\include{cover}
+\makecover
+
+%% Default geometry
+\newgeometry{top=3cm,left=3cm,right=3cm,bottom=4cm}
+
+%% Save default geometry
+\savegeometry{default}
+
+%% Load default geometry with:
+% \loadgeometry{default}
+
+
+%===============================================================================
+% BEGIN ABSTRACT PAGE
+%===============================================================================
+
+\renewenvironment{abstract}
+ {\par\noindent\textbf{\Large\abstractname}\par\bigskip}
+ {}
+
+\begin{flushleft}
+\begin{abstract}
+    <<O resumo tem como objectivo descrever de forma sucinta o trabalho realizado. Deverá conter uma pequena introdução, seguida por uma breve descrição do trabalho realizado e terminando com uma indicação sumária do seu estado final.>>
+    \par \textbf{Área de Aplicação}: <<Identificação da Área de trabalho.>>
+    \par \textbf{Palavras-Chave}: <<Conjunto de palavras-chave que permitirão referenciar domínios de conhecimento, tecnologias, estratégias, etc., directa ou indirectamente referidos no relatório.>>
+\end{abstract}
+\end{flushleft}
+
+\pagebreak
+
+%===============================================================================
+% END ABSTRACT PAGE
+%===============================================================================
+
+
+%===============================================================================
+% BEGIN INDEXES PAGES
+%===============================================================================
+
+%% Changes table of content name
+\renewcommand{\contentsname}{Índice}
+\renewcommand{\listfigurename}{Índice de Figuras}
+\renewcommand{\listtablename}{Índice de Tabelas}
+\renewcommand{\lstlistlistingname}{Índice de \textit{Snippets}}
+
+\tableofcontents
+\pagebreak
+
+\listoffigures
+\pagebreak
+
+\listoftables
+\pagebreak
+
+\lstlistoflistings
+\pagebreak
+
+
+%===============================================================================
+% END INDEXES PAGES
+%===============================================================================
+
+\pagenumbering{arabic}
+
+%===============================================================================
+% BEGIN DESENVOLVIMENTO
+%===============================================================================
+
+\chapter{Desenvolvimento}
+
+%===============================================================================
+% END DESENVOLVIMENTO
+%===============================================================================
+
+%===============================================================================
+% BEGIN CONCLUSÃO
+%===============================================================================
+
+\chapter{Conclusão}
+
+%===============================================================================
+% END CONCLUSÃO
+%===============================================================================
+
+
+
+%===============================================================================
+% BEGIN REFERÊNCIAS
+%===============================================================================
+
+%% Change biblibography name from “Bibliografia” to “Referências”
+\renewcommand\bibname{Referências}
+
+%% https://www.overleaf.com/learn/latex/bibliography_management_with_bibtex
+\begin{thebibliography}{9}
+\bibitem{DatabaseSystems}
+Connolly, T., \& Begg, C. (2015). Database Systems: A Practical Approach to Design, Implementation, and Management (6th ed.). Pearson Education. London, UK.
+
+\bibitem{MySQLManual}
+MySQL 8.0 Reference Manual (2024). \href{https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html}{MySQL 8.0 Reference Manual: Data Type Storage Requirements}. MySQL, Oracle.
+\end{thebibliography}
+
+%% Add bibliografia to index
+\addcontentsline{toc}{chapter}{Bibliografia}
+
+%===============================================================================
+% END REFERÊNCIAS
+%===============================================================================
+
+%===============================================================================
+% BEGIN LISTA DE SIGLAS E ACRÓNIMOS
+%===============================================================================
+
+%% Portuguese babel does not translate this environment
+\renewcommand{\nomname}{Lista de Siglas e Acrónimos}
+
+%% Text that can be shown before acronyms list
+% \renewcommand{\nompreamble}{<<Texto exemplo>>}
+
+%% acronyms
+\nomenclature[01]{\textbf{BD}}{Base de Dados}
+\nomenclature[02]{OLTP}{On-Line Analytical Processing}
+\nomenclature[03]{...}{...}
+
+%% Show acronyms
+\printnomenclature
+
+%===============================================================================
+% END LISTA DE SIGLAS E ACRÓNIMOS
+%===============================================================================
+
+%===============================================================================
+% BEGIN ANEXOS
+%===============================================================================
+
+%% \addchap has no numbering but appears in table of contents.
+\addchap{Anexos}
+
+\addsec{
+    \href{https://google.com/}{\small [I] Exemplo de Anexo}
+    \label{anexo:1}
+}
+
+%===============================================================================
+% END ANEXOS
+%===============================================================================
+
+
+\end{document}
