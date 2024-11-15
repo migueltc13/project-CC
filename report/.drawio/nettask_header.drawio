@@ -1,0 +1,55 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0" version="24.8.6">
+  <diagram name="Página-1" id="S1LxqCSoiejlppb5GJc7">
+    <mxGraphModel dx="880" dy="490" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-1" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="80" y="120" width="640" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-20" value="&lt;b&gt;Packet Size&lt;br&gt;(4 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="80" y="120" width="640" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-21" value="&lt;b&gt;NMS NetTask Version&lt;br&gt;(1 byte)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="80" y="160" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-22" value="&lt;b&gt;Sequence Number&lt;br&gt;(2 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="240" y="160" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-23" value="&lt;b&gt;Type&lt;br&gt;(3 bits)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="660" y="160" width="60" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-24" value="&lt;b&gt;Flags&lt;br&gt;(5 bits)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="560" y="160" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-25" value="&lt;b&gt;Fragment Offset&lt;br&gt;(4 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="80" y="200" width="640" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-26" value="&lt;b&gt;Window Size&lt;br&gt;(2 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="80" y="240" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-27" value="&lt;b&gt;Checksum&lt;br&gt;(2 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="400" y="240" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-28" value="&lt;b&gt;Identifier&lt;br&gt;(32 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="80" y="280" width="640" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-29" value="&lt;b&gt;Data&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="80" y="340" width="640" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-36" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;&lt;font style=&quot;font-size: 22px;&quot;&gt;Flags:&lt;/font&gt;&lt;/h1&gt;&lt;blockquote style=&quot;margin: 0 0 0 40px; border: none; padding: 0px;&quot;&gt;&lt;div style=&quot;font-size: 13px;&quot;&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;ACK&lt;/b&gt; - Acknowledgement&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 13px;&quot;&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;RET&lt;/b&gt; - Retransmission&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 13px;&quot;&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;URG&lt;/b&gt; - Urgent&lt;br&gt;&lt;b&gt;WP&lt;/b&gt;&amp;nbsp; - Window Probe&lt;br&gt;&lt;/font&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;MF&lt;/b&gt;&amp;nbsp; - More Fragments&lt;/font&gt;&lt;/div&gt;&lt;/blockquote&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="130" y="400" width="230" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-37" value="" style="labelPosition=right;align=left;strokeWidth=1;shape=mxgraph.mockup.markup.curlyBrace;html=1;shadow=0;dashed=0;strokeColor=#000000;direction=north;" parent="1" vertex="1">
+          <mxGeometry x="147" y="452" width="20" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-38" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;&lt;font style=&quot;font-size: 22px;&quot;&gt;Message Types:&lt;/font&gt;&lt;/h1&gt;&lt;blockquote style=&quot;margin: 0 0 0 40px; border: none; padding: 0px;&quot;&gt;&lt;div style=&quot;font-size: 13px;&quot;&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;1&lt;/b&gt;&amp;nbsp;- First Connection&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 13px;&quot;&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;2&lt;/b&gt; - Send Task&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 13px;&quot;&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;3&lt;/b&gt;&amp;nbsp;- Send Metrics&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 13px;&quot;&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;4&lt;/b&gt; -&amp;nbsp;EOC (End of Connection)&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 13px;&quot;&gt;&lt;font face=&quot;Courier New&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;*&lt;/b&gt; - Reserved&lt;br&gt;&lt;/font&gt;&lt;/div&gt;&lt;/blockquote&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="459" y="400" width="261" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ZJHZbfnKI5M3YyzbJauu-39" value="" style="labelPosition=right;align=left;strokeWidth=1;shape=mxgraph.mockup.markup.curlyBrace;html=1;shadow=0;dashed=0;strokeColor=#000000;direction=north;" parent="1" vertex="1">
+          <mxGeometry x="472" y="450" width="20" height="90" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
