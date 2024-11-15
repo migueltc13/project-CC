@@ -44,16 +44,9 @@
 If a packet arrives out of order, it is stored in a buffer until the missing packets arrive.
 When the missing packets arrive, the packets are reassembled in the correct order.
 
-***Q*: How does TCP handle lost packets?**
-
-*A*: TCP uses a retransmission mechanism to handle lost packets.
-If a packet is lost, the receiver will send a `NACK` to the sender.
-The sender will then retransmit the lost packet.
-
 ***Q*: How does TCP detect errors?**
 
 *A*: TCP uses a checksum to detect errors.
-The checksum is calculated by summing the bytes in the packet.
 If the checksum does not match the calculated checksum, the packet is *discarded*.
 
 ***Q*: How does TCP correct errors?**
@@ -65,7 +58,8 @@ If the checksum does not match the calculated checksum, the packet is *discarded
 *A*: TCP uses a sliding window mechanism to handle flow control.
 The receiver advertises a window size to the sender.
 The sender will only send packets up to the window size.
-If the window size is 0, the sender will stop sending packets.
+If the window size is 0, the sender will stop sending packets, until
+the receiver advertises a window size greater than 0.
 
 ### Libraries
 
