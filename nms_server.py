@@ -8,7 +8,15 @@ import sys
 import argparse
 import sql.database as db
 import constants as C
+from protocol.net_task import NetTask
+# from protocol.alert_flow import AlertFlow
 
+# NetTask exceptions
+from protocol.net_task import (
+    InvalidVersionException   as NTInvalidVersionException,
+    InvalidHeaderException    as NTInvalidHeaderException,
+    ChecksumMismatchException as NTChecksumMismatchException
+)
 
 ###
 # Local Constants
@@ -22,6 +30,9 @@ BUFFER_SIZE = 1500  # bytes
 
 # Default configuration file path
 CONFIG_PATH = "config/config.json"
+
+# SO_NO_CHECK for disabling UDP checksum
+SO_NO_CHECK = 11
 
 
 ###
@@ -140,7 +151,10 @@ class TCPServer(threading.Thread):
             try:
                 self.server_socket.settimeout(1.0)
                 client_socket, addr = self.server_socket.accept()
+
                 self.ui.save_status("TODO", f"Connection from {addr}")
+
+                # Create a thread to handle the client socket
                 threading.Thread(target=self.handle_client, args=(client_socket,)).start()
             except socket.timeout:
                 pass
@@ -155,7 +169,7 @@ class TCPServer(threading.Thread):
                     data = client_socket.recv(BUFFER_SIZE)
                     if not data:
                         break
-                    alert_message = data.decode()
+                    alert_message = data.decode(C.ENCODING)
                     self.ui.save_alert("TODO", alert_message)
                 except socket.timeout:
                     pass
@@ -167,7 +181,7 @@ class TCPServer(threading.Thread):
 
 # UDP Server for NetTask
 class UDPServer(threading.Thread):
-    def __init__(self, ui, host='0.0.0.0', port=C.UDP_PORT):
+    def __init__(self, ui, net_task, host='0.0.0.0', port=C.UDP_PORT):
         super().__init__(daemon=True)
         self.ui = ui
         self.host = host
@@ -175,9 +189,12 @@ class UDPServer(threading.Thread):
         self.server_hostname = ui.server_hostname
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.shutdown_flag = threading.Event()
+        self.net_task = net_task
 
         # Start the UDP server
         try:
+            # Disable checksum check for UDP (linux only)
+            self.server_socket.setsockopt(socket.SOL_SOCKET, SO_NO_CHECK, 1)
             self.server_socket.bind((self.host, self.port))
         except OSError:
             self.ui.display_error(f"UDP port {self.port} is already in use. Exiting.")
@@ -189,12 +206,45 @@ class UDPServer(threading.Thread):
             try:
                 self.server_socket.settimeout(1.0)
                 data, addr = self.server_socket.recvfrom(BUFFER_SIZE)
-                metric_data = data.decode()
-                self.ui.save_metric("TODO", f"Metric data from {addr}: {metric_data}")
+
+                # Create a thread to handle the packet
+                threading.Thread(target=self.handle_packet, args=(data,)).start()
             except socket.timeout:
                 continue
             except OSError:
                 break
+
+    def handle_packet(self, data):
+        try:
+            ack, packet = self.net_task.parse_packet(self.net_task, data)
+        # If any of the exceptions below are raised, the packet is discarded.
+        # By not sending an ACK, the agent will resend the packet.
+        except NTInvalidVersionException as e:
+            self.ui.display_error(e)
+            return
+        except NTInvalidHeaderException as e:
+            self.ui.display_error(e)
+            return
+        except NTChecksumMismatchException as e:
+            self.ui.display_error(e)
+            return
+
+        # TODO Check if the packet received is a ack, if so process the previous
+        # packet sent as ackowledged and remove it from the list of packets to be acked,
+        # for that specific client
+
+        # TODO packet reordering and defragmentation
+        # TODO flux control by checking the window size (ignored if URG flag is set)
+        # if the window size received is 0, send WINDOW_PROBE until the window size updates
+
+        # TODO check for packet type
+        # - First connection: add the client to the clients pool
+        # - Task Metric: save the metric, after parsing data (also save the agent hostname)
+        # - End of connection: remove the client from the clients pool
+
+        # TODO remove this (debug only)
+        print(f"Received packet: {str(packet)}")
+        # self.ui.save_metric(packet["identifier"], f"Metric data: {packet['data']}")
 
     def shutdown(self):
         self.shutdown_flag.set()
@@ -206,9 +256,9 @@ class UDPServer(threading.Thread):
 ###
 
 def main():
-    parser = argparse.ArgumentParser(description="Network Management System Server")
-    parser.add_argument("--config", "-c", help="Configuration file path", default=CONFIG_PATH)
-    args = parser.parse_args()
+    arg_parser = argparse.ArgumentParser(description="Network Management System Server")
+    arg_parser.add_argument("--config", "-c", help="Configuration file path", default=CONFIG_PATH)
+    args = arg_parser.parse_args()
 
     config = load_config(args.config)
     if config is None:
@@ -221,7 +271,7 @@ def main():
     ui.display_title()
 
     tcp_server = TCPServer(ui)
-    udp_server = UDPServer(ui)
+    udp_server = UDPServer(ui, NetTask(C))
 
     tcp_server.start()
     udp_server.start()
