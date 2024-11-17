@@ -14,7 +14,7 @@ import socket
 import argparse
 import constants as C
 from protocol.net_task import NetTask
-# from protocol.alert_flow import AlertFlow
+from protocol.alert_flow import AlertFlow
 
 
 class ClientTCP:
@@ -22,23 +22,32 @@ class ClientTCP:
         self.server_ip = server_ip
         self.server_port = server_port
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client.connect((self.server_ip, C.TCP_PORT))
+        self.alert_flow = AlertFlow(C)
 
-    def send_alert(self, alert_message):
-        # TODO format alert message
-        self.client.send(alert_message.encode(C.ENCODING))
+        # Connect to the server
+        try:
+            self.client.connect((self.server_ip, C.TCP_PORT))
+        except Exception:
+            print(f"Error connecting to TCP server {self.server_ip}:{C.TCP_PORT}")
+            print("Ensure the server is running and the IP address is correct.")
+            print("Exiting...")
+            exit(1)
+
+    def send_alert(self, agent_id, alert):
+        packet = self.alert_flow.build_packet(self.alert_flow, alert, agent_id)
+        self.client.send(packet)
 
     def close(self):
         self.client.close()
 
 
 class ClientUDP:
-    def __init__(self, server_ip, server_port, net_task):
+    def __init__(self, server_ip, server_port):
         self.server_ip = server_ip
         self.server_port = server_port
         self.client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.client.settimeout(1.0)
-        self.net_task = net_task
+        self.net_task = NetTask(C)
 
     def send_first_connection(self, agent_id):
         seq_number = 0  # TODO
@@ -51,18 +60,21 @@ class ClientUDP:
 
 if __name__ == "__main__":
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Network Management System Client")
-    parser.add_argument("--server", "-s", help="Server IP", default="0.0.0.0")
-    args = parser.parse_args()
+    arg_parser = argparse.ArgumentParser(description="Network Management System Client")
+    arg_parser.add_argument("--server", "-s", help="Server IP", default="0.0.0.0")
+    args = arg_parser.parse_args()
 
     server_ip = args.server
     agent_id = socket.gethostname()
 
-    udp_client = ClientUDP(server_ip, C.UDP_PORT, NetTask(C))
-    tcp_client = ClientTCP(server_ip, C.TCP_PORT)  # AlertFlow(C))
+    udp_client = ClientUDP(server_ip, C.UDP_PORT)
+    tcp_client = ClientTCP(server_ip, C.TCP_PORT)
 
     # First connection to the server
     udp_client.send_first_connection(agent_id)
+
+    # TODO remove this (test alert)
+    tcp_client.send_alert(agent_id, "Test Alert")
 
     # TCP - open a connection for sending critical alerts
     # When running into a critical alert situation, send an alert to the server
@@ -71,9 +83,3 @@ if __name__ == "__main__":
     # Await for ACK if not received, retry
     # Await for tasks from server
     # Parse/execute tasks in a thread
-
-    # recieve_thread = threading.Thread(target=recieve)
-    # write_thread = threading.Thread(target=write)
-
-    # recieve_thread.start()
-    # write_thread.start()

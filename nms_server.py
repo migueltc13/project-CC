@@ -9,13 +9,19 @@ import argparse
 import sql.database as db
 import constants as C
 from protocol.net_task import NetTask
-# from protocol.alert_flow import AlertFlow
+from protocol.alert_flow import AlertFlow
 
 # NetTask exceptions
 from protocol.net_task import (
     InvalidVersionException   as NTInvalidVersionException,
     InvalidHeaderException    as NTInvalidHeaderException,
     ChecksumMismatchException as NTChecksumMismatchException
+)
+
+# AlertFlow exceptions
+from protocol.alert_flow import (
+    InvalidHeaderException     as AFInvalidHeaderException,
+    InvalidVersionException    as AFInvalidVersionException
 )
 
 ###
@@ -107,7 +113,7 @@ class ServerUI:
                 self.view_mode = False
             case 3:
                 self.display_info("Displaying connection status...")
-                # TODO connection status display
+                # TODO connection status display using the Pool class
             case 4:
                 self.display_info("Shutting down server...")
                 tcp_server.shutdown()
@@ -136,6 +142,7 @@ class TCPServer(threading.Thread):
         self.server_hostname = ui.server_hostname
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.shutdown_flag = threading.Event()
+        self.alert_flow = AlertFlow(C)
 
         # Start the TCP server
         try:
@@ -152,7 +159,7 @@ class TCPServer(threading.Thread):
                 self.server_socket.settimeout(1.0)
                 client_socket, addr = self.server_socket.accept()
 
-                self.ui.save_status("TODO", f"Connection from {addr}")
+                self.ui.save_status(self.server_hostname, f"TCP connection received from {addr}")
 
                 # Create a thread to handle the client socket
                 threading.Thread(target=self.handle_client, args=(client_socket,)).start()
@@ -165,12 +172,22 @@ class TCPServer(threading.Thread):
         with client_socket:
             while not self.shutdown_flag.is_set():
                 try:
-                    # TODO format alert message
-                    data = client_socket.recv(BUFFER_SIZE)
-                    if not data:
+                    raw_data = client_socket.recv(BUFFER_SIZE)
+                    if not raw_data:
                         break
-                    alert_message = data.decode(C.ENCODING)
-                    self.ui.save_alert("TODO", alert_message)
+
+                    try:
+                        packet = self.alert_flow.parse_packet(self.alert_flow, raw_data)
+                    except AFInvalidVersionException as e:
+                        self.ui.display_error(e)
+                        break
+                    except AFInvalidHeaderException as e:
+                        self.ui.display_error(e)
+                        break
+
+                    # TODO display (JSON) parsed alert data
+                    # or, preferably, a message for clear alerts
+                    self.ui.save_alert(str(packet['identifier']), str(packet['data']))
                 except socket.timeout:
                     pass
 
@@ -181,7 +198,7 @@ class TCPServer(threading.Thread):
 
 # UDP Server for NetTask
 class UDPServer(threading.Thread):
-    def __init__(self, ui, net_task, host='0.0.0.0', port=C.UDP_PORT):
+    def __init__(self, ui, host='0.0.0.0', port=C.UDP_PORT):
         super().__init__(daemon=True)
         self.ui = ui
         self.host = host
@@ -189,7 +206,7 @@ class UDPServer(threading.Thread):
         self.server_hostname = ui.server_hostname
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.shutdown_flag = threading.Event()
-        self.net_task = net_task
+        self.net_task = NetTask(C)
 
         # Start the UDP server
         try:
@@ -205,22 +222,26 @@ class UDPServer(threading.Thread):
         while not self.shutdown_flag.is_set():
             try:
                 self.server_socket.settimeout(1.0)
-                data, addr = self.server_socket.recvfrom(BUFFER_SIZE)
+                raw_data, addr = self.server_socket.recvfrom(BUFFER_SIZE)
+                if not raw_data:
+                    break
 
                 # Create a thread to handle the packet
-                threading.Thread(target=self.handle_packet, args=(data,)).start()
+                threading.Thread(target=self.handle_packet, args=(raw_data,)).start()
             except socket.timeout:
                 continue
             except OSError:
                 break
 
-    def handle_packet(self, data):
+    def handle_packet(self, raw_data):
         try:
-            ack, packet = self.net_task.parse_packet(self.net_task, data)
+            ack, packet = self.net_task.parse_packet(self.net_task, raw_data)
         # If any of the exceptions below are raised, the packet is discarded.
         # By not sending an ACK, the agent will resend the packet.
         except NTInvalidVersionException as e:
             self.ui.display_error(e)
+            # TODO This exception doesn't need to interrupt the server. We can
+            # just send a message in the UI and try to process the packet either way
             return
         except NTInvalidHeaderException as e:
             self.ui.display_error(e)
@@ -271,7 +292,7 @@ def main():
     ui.display_title()
 
     tcp_server = TCPServer(ui)
-    udp_server = UDPServer(ui, NetTask(C))
+    udp_server = UDPServer(ui)
 
     tcp_server.start()
     udp_server.start()
