@@ -10,6 +10,10 @@ import struct
 # - Identifier          (32 bytes)
 # - Data                ( N bytes) [Default: UTF-8]
 
+# NOTE if the data size is greater than the buffer size (1500 bytes)
+# we will need to handle fragmentation, we need to check if that is needed
+# for the AlertFlow protocol.
+
 ###
 # Constants
 ###
