@@ -109,7 +109,7 @@ class NetTask:
 
         # Unpack the header fields
         try:
-            # Check if the NMS version is correct before unpacking the rest of the header
+            # Check if the NMS NetTask version is correct before unpacking the rest of the header
             version = header[SIZE_PACKET_SIZE:SIZE_PACKET_SIZE + SIZE_NMS_VERSION]
             version = int.from_bytes(version, byteorder='big')
             if version != self.C.NET_TASK_VERSION:
@@ -230,7 +230,7 @@ class NetTask:
 
 
 ###
-# Exceptions
+# Exceptions TODO merge with AlertFlow exceptions
 ###
 
 class InvalidHeaderException(Exception):
