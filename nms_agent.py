@@ -33,8 +33,8 @@ class ClientTCP:
             print("Exiting...")
             exit(1)
 
-    def send_alert(self, agent_id, alert):
-        packet = self.alert_flow.build_packet(self.alert_flow, alert, agent_id)
+    def send_alert(self, alert_type, agent_id, data):
+        packet = self.alert_flow.build_packet(self.alert_flow, alert_type, agent_id, data)
         self.client.send(packet)
 
     def close(self):
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     udp_client.send_first_connection(agent_id)
 
     # TODO remove this (test alert)
-    tcp_client.send_alert(agent_id, "Test Alert")
+    tcp_client.send_alert(AlertFlow.CPU_USAGE, agent_id, "Test CPU usage Alert")
 
     # TCP - open a connection for sending critical alerts
     # When running into a critical alert situation, send an alert to the server

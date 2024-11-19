@@ -73,10 +73,10 @@ class ServerUI:
         if self.view_mode:
             print(f"[STATUS] ({hostname}) {message}")
 
-    def save_alert(self, hostname, message):
+    def save_alert(self, hostname, alert_type, message):
         db.operation.insert(db.values.log_type.ALERT,  hostname, message)
         if self.view_mode:
-            print(f"[ALERT]  ({hostname}) {message}")
+            print(f"[ALERT]  ({hostname}) {{{alert_type}}} {message}")
 
     def save_metric(self, hostname, message):
         db.operation.insert(db.values.log_type.METRIC, hostname, message)
@@ -185,9 +185,8 @@ class TCPServer(threading.Thread):
                         self.ui.display_error(e)
                         break
 
-                    # TODO display (JSON) parsed alert data
-                    # or, preferably, a message for clear alerts
-                    self.ui.save_alert(str(packet['identifier']), str(packet['data']))
+                    alert_type = self.alert_flow.parse_alert_type(self.alert_flow, packet['alert_type'])
+                    self.ui.save_alert(str(packet['identifier']), alert_type, str(packet['data']))
                 except socket.timeout:
                     pass
 
