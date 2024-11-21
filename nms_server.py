@@ -31,9 +31,6 @@ from protocol.alert_flow import (
 # Maximum number of clients in the TCP server queue
 TCP_CLIENTS_QUEUE_SIZE = 8
 
-# Buffer size is set as the usual MTU size
-BUFFER_SIZE = 1500  # bytes
-
 # Default configuration file path
 CONFIG_PATH = "config/config.json"
 
@@ -89,6 +86,9 @@ class ServerUI:
     def display_error(self, message):
         print(f"[ERROR] {message}")
 
+    def display_warning(self, message):
+        print(f"[WARNING] {message}")
+
     def display_tasks(self, tasks):
         print("[CONFIGURATION] Loaded Tasks:")
         print(json.dumps(tasks, indent=2))
@@ -141,6 +141,7 @@ class TCPServer(threading.Thread):
         self.port = port
         self.server_hostname = ui.server_hostname
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.settimeout(1.0)
         self.shutdown_flag = threading.Event()
         self.alert_flow = AlertFlow(C)
 
@@ -156,7 +157,6 @@ class TCPServer(threading.Thread):
     def run(self):
         while not self.shutdown_flag.is_set():
             try:
-                self.server_socket.settimeout(1.0)
                 client_socket, addr = self.server_socket.accept()
 
                 self.ui.save_status(self.server_hostname, f"TCP connection received from {addr}")
@@ -165,14 +165,14 @@ class TCPServer(threading.Thread):
                 threading.Thread(target=self.handle_client, args=(client_socket,)).start()
             except socket.timeout:
                 pass
-            except OSError:
+            except OSError:  # TODO check this exception
                 break
 
     def handle_client(self, client_socket):
         with client_socket:
             while not self.shutdown_flag.is_set():
                 try:
-                    raw_data = client_socket.recv(BUFFER_SIZE)
+                    raw_data = client_socket.recv(C.BUFFER_SIZE)
                     if not raw_data:
                         break
 
@@ -185,7 +185,8 @@ class TCPServer(threading.Thread):
                         self.ui.display_error(e)
                         break
 
-                    alert_type = self.alert_flow.parse_alert_type(self.alert_flow, packet['alert_type'])
+                    alert_type = self.alert_flow.parse_alert_type(self.alert_flow,
+                                                                  packet['alert_type'])
                     self.ui.save_alert(str(packet['identifier']), alert_type, str(packet['data']))
                 except socket.timeout:
                     pass
@@ -204,12 +205,13 @@ class UDPServer(threading.Thread):
         self.port = port
         self.server_hostname = ui.server_hostname
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.server_socket.settimeout(1.0)
         self.shutdown_flag = threading.Event()
         self.net_task = NetTask(C)
 
         # Start the UDP server
         try:
-            # Disable checksum check for UDP (linux only)
+            # Disable checksum check for UDP (Linux only)
             self.server_socket.setsockopt(socket.SOL_SOCKET, SO_NO_CHECK, 1)
             self.server_socket.bind((self.host, self.port))
         except OSError:
@@ -220,28 +222,26 @@ class UDPServer(threading.Thread):
     def run(self):
         while not self.shutdown_flag.is_set():
             try:
-                self.server_socket.settimeout(1.0)
-                raw_data, addr = self.server_socket.recvfrom(BUFFER_SIZE)
+                raw_data, addr = self.server_socket.recvfrom(C.BUFFER_SIZE)
                 if not raw_data:
                     break
 
                 # Create a thread to handle the packet
-                threading.Thread(target=self.handle_packet, args=(raw_data,)).start()
+                threading.Thread(target=self.handle_packet, args=(raw_data, addr,)).start()
             except socket.timeout:
                 continue
-            except OSError:
+            except OSError:  # TODO check this exception
                 break
 
-    def handle_packet(self, raw_data):
+    def handle_packet(self, raw_data, addr):
         try:
-            ack, packet = self.net_task.parse_packet(self.net_task, raw_data)
-        # If any of the exceptions below are raised, the packet is discarded.
-        # By not sending an ACK, the agent will resend the packet.
+            packet = self.net_task.parse_packet(self.net_task, raw_data)
+        # If any of the exceptions Invalid Header or Checksum Mismatch are raised, the
+        # packet is discarded. By not sending an ACK, the agent will resend the packet.
         except NTInvalidVersionException as e:
-            self.ui.display_error(e)
-            # TODO This exception doesn't need to interrupt the server. We can
-            # just send a message in the UI and try to process the packet either way
-            return
+            # This exception doesn't need to interrupt the server. We can just
+            # send a message in the UI and try to process the packet anyway.
+            self.ui.display_warning(e)
         except NTInvalidHeaderException as e:
             self.ui.display_error(e)
             return
@@ -249,12 +249,13 @@ class UDPServer(threading.Thread):
             self.ui.display_error(e)
             return
 
-        # TODO Check if the packet received is a ack, if so process the previous
-        # packet sent as ackowledged and remove it from the list of packets to be acked,
-        # for that specific client
+        # TODO If the packet received is a ACK, process the previous packet sent
+        # as acknowledged and remove it from the list of packets to be "acked",
+        # for that specific agent. After that we interrupt this function.
 
         # TODO packet reordering and defragmentation
-        # TODO flux control by checking the window size (ignored if URG flag is set)
+        # TODO flux control by checking the window size
+        # if the URG flag is set, send the packet immediately, regardless of the window size
         # if the window size received is 0, send WINDOW_PROBE until the window size updates
 
         # TODO check for packet type
@@ -263,8 +264,16 @@ class UDPServer(threading.Thread):
         # - End of connection: remove the client from the clients pool
 
         # TODO remove this (debug only)
-        print(f"Received packet: {str(packet)}")
+        print(f"Received packet: {json.dumps(packet, indent=2)}")
         # self.ui.save_metric(packet["identifier"], f"Metric data: {packet['data']}")
+
+        # Send ACK
+        seq_number = 0  # TODO
+        identifier = self.server_hostname
+        window_size = 128  # TODO
+        ack_packet = self.net_task.build_ack_packet(packet, seq_number,
+                                                    identifier, window_size)
+        self.server_socket.sendto(ack_packet, addr)
 
     def shutdown(self):
         self.shutdown_flag.set()
@@ -298,12 +307,13 @@ def main():
 
     try:
         ui.main_menu(tcp_server, udp_server, config)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         ui.display_info("Server interrupted. Shutting down...")
     finally:
         tcp_server.shutdown()
         udp_server.shutdown()
         ui.save_status(server_hostname, "Server shutdown complete.")
+        print("TODO send EOC to connected agents")
 
 
 if __name__ == "__main__":
