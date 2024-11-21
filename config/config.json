@@ -1,7 +1,7 @@
 {
     "tasks": [
         {
-            "task_id": "task-1",
+            "task_id": 1,
             "frequency": 20,
             "devices": [
                 {
