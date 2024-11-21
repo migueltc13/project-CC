@@ -4,11 +4,21 @@
 
 #### Geral
 
-- [ ] *Pool* de agentes conectados, pacotes por processar e pacotes por enviar (extra: *pool* de *threads*)
+- [ ] *Pool* de agentes conectados, pacotes por processar e pacotes por enviar
 - [ ] *Parsing* de tarefas pelos agentes
 - [ ] Execução e envio dos resultados (métricas e alertas) das tarefas
 - [ ] *Parsing* dos resultados pelo servidor
 - [ ] Adicionar tabelas de base de dados para armazenar métricas e alertas
+
+#### Pool (Server)
+
+- List of connected agents
+  - Add agent when server receives the first connection packet
+  - Remove agent when server receives a EOC (end of connection) packet
+
+- For each agent store:
+  - List of packets sent yet to be acknowledged
+  - List of packets received yet to be reordered and defragmented
 
 #### NetTask
 
@@ -24,7 +34,7 @@
 
 - [ ] Estrutura do *header*
 - [x] Verificar versão do NMS
-- [ ] Fragmentação de pacotes
+- [ ] Verificar se é preciso implementar fragmentação de pacotes
 
 ## Protocolos Aplicacionais
 
@@ -35,6 +45,13 @@
 ### *AlertFlow* (TCP)
 
 **TODO add AlertFlow header image**
+
+Types of Alerts:
+- CPU Usage
+- RAM Usage
+- Interface Stats
+- Packet Loss
+- Jitter
 
 ### Q&A
 
