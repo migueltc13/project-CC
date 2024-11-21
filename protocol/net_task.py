@@ -76,6 +76,8 @@ class NetTask:
         self.C = constants
 
     # Exclude the checksum field from the header and calculate the checksum
+    # TODO make checksum of the total packet as this method is used
+    # when checksum field is padded with 0
     @staticmethod
     def calculate_checksum(packet):
         # Extract the header without the checksum field plus the data
@@ -129,7 +131,7 @@ class NetTask:
         ack_flag            = (flags_type & 0b10000000) >> 7
         retransmission_flag = (flags_type & 0b01000000) >> 6
         urgent_flag         = (flags_type & 0b00100000) >> 5
-        window_size_flag    = (flags_type & 0b00010000) >> 4
+        window_probe_flag   = (flags_type & 0b00010000) >> 4
         more_fragments_flag = (flags_type & 0b00001000) >> 3
         msg_type            = (flags_type & 0b00000111)
 
@@ -138,7 +140,7 @@ class NetTask:
 
         if ack_flag:
             # Convert data to int (sequence number)
-            return True, {
+            return {
                 "packet_size": packet_size,
                 "version": version,
                 "seq_number": seq_number,
@@ -146,14 +148,18 @@ class NetTask:
                     "ack": ack_flag,
                     "retransmission": retransmission_flag,
                     "urgent": urgent_flag,
-                    "window_size": window_size_flag,
+                    "window_probe": window_probe_flag,
                     "more_fragments": more_fragments_flag,
                 },
+                "msg_type": msg_type,
+                "fragment_offset": fragment_offset,
+                "window_size": window_size,
+                "checksum": checksum,
                 "identifier": identifier.decode(self.C.ENCODING),
                 "ack_number": int.from_bytes(data, byteorder='big')
             }
 
-        return False, {
+        return {
             "packet_size": packet_size,
             "version": version,
             "seq_number": seq_number,
@@ -161,7 +167,7 @@ class NetTask:
                 "ack": ack_flag,
                 "retransmission": retransmission_flag,
                 "urgent": urgent_flag,
-                "window_size": window_size_flag,
+                "window_probe": window_probe_flag,
                 "more_fragments": more_fragments_flag,
             },
             "msg_type": msg_type,
@@ -173,10 +179,7 @@ class NetTask:
         }
 
     @staticmethod
-    def build_packet(self, data, seq_number, flags, msg_type, identifier, ack_number=-1,
-                     fragment_offset=0, window_size=0):
-        # TODO remove default values params and clean the other unnecessary params
-
+    def build_packet(self, data, seq_number, flags, msg_type, identifier, window_size):
         # Calculate packet size
         packet_size = HEADER_SIZE + len(data)
 
@@ -185,15 +188,14 @@ class NetTask:
             (flags.get("ack",            0) << 7) |
             (flags.get("retransmission", 0) << 6) |
             (flags.get("urgent",         0) << 5) |
-            (flags.get("window_size",    0) << 4) |
+            (flags.get("window_probe",   0) << 4) |
             (flags.get("more_fragments", 0) << 3) |
             (msg_type & 0b00000111)
         )
 
         # TODO How to define the sequence number?
-        # TODO Urgent flag and window size
         # TODO Check if fragmentation is needed (set more fragments flag and fragment offset)
-        # TODO ACK sequence number
+        fragment_offset = 0
 
         # Initial header with checksum set to 0
         header = struct.pack(
@@ -228,6 +230,54 @@ class NetTask:
         # Return the packet with the checksum included in the header
         return header + data.encode(self.C.ENCODING)
 
+    def build_ack_packet(self, packet, seq_number, identifier, window_size):
+        # Calculate packet size
+        packet_size = HEADER_SIZE + SIZE_SEQ_NUMBER
+
+        # Set the appropriate flags for the ACK packet combine the remaining
+        # flags and type of the packet being acknowledged
+        flags_type = (
+            (1 << 7) |  # ACK flag
+            (0 << 6) |  # No retransmission
+            (packet['flags'].get("urgent", 0) << 5) |
+            (0 << 4) |  # No window probe
+            (0 << 3) |  # No more fragments
+            (packet["msg_type"] & 0b00000111)
+        )
+
+        # Initial header with checksum set to 0
+        header = struct.pack(
+            STRUCT_FORMAT,
+            packet_size,
+            self.C.NET_TASK_VERSION,
+            seq_number,
+            flags_type,
+            0,  # Fragment offset
+            window_size,
+            0,  # Placeholder/padding for checksum
+            identifier.encode(self.C.ENCODING)
+        )
+
+        # Concatenate header and data to calculate the checksum
+        ack_number = packet["seq_number"].to_bytes(2, byteorder='big')
+        ack_packet = header + ack_number
+        checksum = self.calculate_checksum(ack_packet)
+
+        # Repack the header with the actual checksum
+        header = struct.pack(
+            STRUCT_FORMAT,
+            packet_size,
+            self.C.NET_TASK_VERSION,
+            seq_number,
+            flags_type,
+            0,  # Fragment offset
+            window_size,
+            checksum,
+            identifier.encode(self.C.ENCODING)
+        )
+
+        # Return the ack packet with the checksum included in the header
+        return header + packet["seq_number"].to_bytes(2, byteorder='big')
 
 ###
 # Exceptions TODO merge with AlertFlow exceptions
