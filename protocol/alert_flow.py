@@ -3,6 +3,9 @@
 import struct
 import constants as C
 
+from .exceptions.invalid_version import InvalidVersionException
+from .exceptions.invalid_header  import InvalidHeaderException
+
 # AlertFlow header:
 # - Packet Size         ( 4 bytes)
 # - AlertFlow version   ( 1 byte)
@@ -120,33 +123,3 @@ class AlertFlow:
         )
 
         return header + data.encode(C.ENCODING)
-
-
-###
-# Exceptions TODO merge with NetTask exceptions
-###
-
-class InvalidHeaderException(Exception):
-    # Exception raised for invalid AlertFlow header
-    def __init__(self, message="Invalid header"):
-        self.message = message
-        super().__init__(self.message)
-    pass
-
-    def __str__(self):
-        return f'{self.message}'
-
-
-class InvalidVersionException(Exception):
-    # Exception raised for invalid NMS NetTask version
-    def __init__(self, received_version, expected_version, message="Invalid NMS AlertFlow version"):
-        self.expected_version = expected_version
-        self.received_version = received_version
-        self.message = f"{message}\n" \
-            f"Received version: {received_version}\n" \
-            f"Expected version: {expected_version}"
-        super().__init__(self.message)
-    pass
-
-    def __str__(self):
-        return f'{self.message}'

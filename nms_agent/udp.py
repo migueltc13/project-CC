@@ -9,11 +9,9 @@ import constants as C
 from protocol.net_task import NetTask
 
 # NetTask exceptions
-from protocol.net_task import (
-    InvalidVersionException   as NTInvalidVersionException,
-    InvalidHeaderException    as NTInvalidHeaderException,
-    ChecksumMismatchException as NTChecksumMismatchException
-)
+from protocol.exceptions.invalid_version   import InvalidVersionException
+from protocol.exceptions.invalid_header    import InvalidHeaderException
+from protocol.exceptions.checksum_mismatch import ChecksumMismatchException
 
 
 class UDP(threading.Thread):
@@ -50,11 +48,11 @@ class UDP(threading.Thread):
             packet = self.net_task.parse_packet(self.net_task, raw_data)
         # If any of the exceptions Invalid Header or Checksum Mismatch are raised, the
         # packet is discarded. By not sending an ACK, the server will resend the packet.
-        except NTInvalidVersionException as e:
+        except InvalidVersionException as e:
             # This exception doesn't need to interrupt the server. We can just
             # print a message and try to process the packet anyway.
             print(e)
-        except (NTInvalidHeaderException, NTChecksumMismatchException) as e:
+        except (InvalidHeaderException, ChecksumMismatchException) as e:
             print(e)
             return
 

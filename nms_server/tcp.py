@@ -7,10 +7,8 @@ import constants as C
 from protocol.alert_flow import AlertFlow
 
 # AlertFlow exceptions
-from protocol.alert_flow import (
-    InvalidHeaderException    as AFInvalidHeaderException,
-    InvalidVersionException   as AFInvalidVersionException
-)
+from protocol.exceptions.invalid_version import InvalidVersionException
+from protocol.exceptions.invalid_header  import InvalidHeaderException
 
 
 # Maximum number of clients in the TCP server queue
@@ -67,10 +65,10 @@ class TCP(threading.Thread):
 
                     try:
                         packet = self.alert_flow.parse_packet(self.alert_flow, raw_data)
-                    except AFInvalidVersionException as e:
+                    except InvalidVersionException as e:
                         self.ui.display_error(e)
                         break
-                    except AFInvalidHeaderException as e:
+                    except InvalidHeaderException as e:
                         self.ui.display_error(e)
                         break
 

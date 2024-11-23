@@ -3,6 +3,10 @@
 import struct
 import constants as C
 
+from .exceptions.invalid_version   import InvalidVersionException
+from .exceptions.invalid_header    import InvalidHeaderException
+from .exceptions.checksum_mismatch import ChecksumMismatchException
+
 # NetTask Header:
 # - Packet Size     ( 4 bytes)
 # - NetTask version ( 1 byte)
@@ -283,45 +287,3 @@ class NetTask:
                                    is_ack=True)
 
         return seq_number + 1, header + ack_number.to_bytes(2, byteorder='big')
-
-
-###
-# Exceptions TODO merge with AlertFlow exceptions
-###
-
-class InvalidHeaderException(Exception):
-    # Exception raised for invalid NetTask header
-    def __init__(self, message="Invalid header"):
-        self.message = message
-        super().__init__(self.message)
-    pass
-
-    def __str__(self):
-        return f'{self.message}'
-
-
-class InvalidVersionException(Exception):
-    # Exception raised for invalid NMS NetTask version
-    def __init__(self, received_version, expected_version, message="Invalid NMS NetTask version"):
-        self.expected_version = expected_version
-        self.received_version = received_version
-        self.message = f"{message}\n" \
-                       f"Received version: {received_version}\n" \
-                       f"Expected version: {expected_version}"
-        super().__init__(self.message)
-    pass
-
-    def __str__(self):
-        return f'{self.message}'
-
-
-# Checksum mismatch
-class ChecksumMismatchException(Exception):
-    # Exception raised for checksum mismatch in packets
-    def __init__(self, message="Checksum mismatch"):
-        self.message = message
-        super().__init__(self.message)
-    pass
-
-    def __str__(self):
-        return f'{self.message}'

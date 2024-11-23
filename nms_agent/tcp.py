@@ -6,10 +6,8 @@ import constants as C
 from protocol.alert_flow import AlertFlow
 
 # AlertFlow exceptions
-# from protocol.alert_flow import (
-#     InvalidHeaderException    as AFInvalidHeaderException,
-#     InvalidVersionException   as AFInvalidVersionException
-# )
+# from protocol.exceptions.invalid_version import InvalidVersionException
+# from protocol.exceptions.invalid_header  import InvalidHeaderException
 
 
 class TCP:
