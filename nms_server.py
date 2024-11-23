@@ -306,10 +306,7 @@ class UDPServer(threading.Thread):
             # This exception doesn't need to interrupt the server. We can just
             # send a message in the UI and try to process the packet anyway.
             self.ui.display_warning(e)
-        except NTInvalidHeaderException as e:
-            self.ui.display_error(e)
-            return
-        except NTChecksumMismatchException as e:
+        except (NTInvalidHeaderException, NTChecksumMismatchException) as e:
             self.ui.display_error(e)
             return
 
@@ -342,6 +339,9 @@ class UDPServer(threading.Thread):
             # TODO send window probes until the window size updates
             pass
 
+        # TODO remove this (debug only)
+        print(f"Received packet: {json.dumps(packet, indent=2)}")
+
         # Based on the packet type:
         # - First connection: add the client to the clients pool
         # - Task Metric: save the metric, after parsing data (also save the agent hostname)
@@ -355,8 +355,6 @@ class UDPServer(threading.Thread):
             case self.net_task.EOC:
                 self.pool.remove_client(agent_id)
 
-        # TODO remove this (debug only)
-        print(f"Received packet: {json.dumps(packet, indent=2)}")
         # self.ui.save_metric(packet["identifier"], f"Metric data: {packet['data']}")
 
         # Increment the sequence number for the agent
