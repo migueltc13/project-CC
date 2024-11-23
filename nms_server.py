@@ -21,8 +21,8 @@ from protocol.net_task import (
 
 # AlertFlow exceptions
 from protocol.alert_flow import (
-    InvalidHeaderException     as AFInvalidHeaderException,
-    InvalidVersionException    as AFInvalidVersionException
+    InvalidHeaderException    as AFInvalidHeaderException,
+    InvalidVersionException   as AFInvalidVersionException
 )
 
 ###
@@ -357,16 +357,18 @@ class UDPServer(threading.Thread):
 
         # self.ui.save_metric(packet["identifier"], f"Metric data: {packet['data']}")
 
-        # Increment the sequence number for the agent
-        # TODO check if the sequence number is correct between agent and server
-        self.pool.increment_seq_number(agent_id)
-
         # Send ACK
-        seq_number = self.pool.get_seq_number(agent_id)
+        seq_number = self.pool.increment_seq_number(agent_id)
+        print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
         identifier = self.server_hostname
         window_size = self.pool.get_window_size()
-        ack_packet = self.net_task.build_ack_packet(packet, seq_number,
-                                                    identifier, window_size)
+        seq_number, ack_packet = self.net_task.build_ack_packet(packet, seq_number,
+                                                                identifier, window_size)
+
+        # Increment the sequence number for the agent
+        # TODO check if the sequence number is correct between agent and server
+        self.pool.set_seq_number(agent_id, seq_number)
+
         with self.lock:
             self.server_socket.sendto(ack_packet, addr)
 
@@ -422,9 +424,14 @@ class ServerPool:
         with self.lock:
             return self.seq_numbers[client]
 
+    def set_seq_number(self, client, seq_number):
+        with self.lock:
+            self.seq_numbers[client] = seq_number
+
     def increment_seq_number(self, client):
         with self.lock:
             self.seq_numbers[client] += 1
+            return self.seq_numbers[client]
 
     def add_packet_to_ack(self, client, packet):
         with self.lock:
@@ -461,11 +468,8 @@ class ServerPool:
             # reorder packets
             packets.sort(key=lambda x: x["seq_number"])
 
-            # defragment data
-            # get the header of the first packet set the more fragments flag to 0,
-            # concatenate the data of all packets (TODO: maybe update the size field)
+            # defragment data by concatenating the data of all packets
             packet = packets[0]
-            packet["flags"]["more_fragments"] = 0
             for i in range(1, len(packets)):
                 packet["data"] += packets[i]["data"]
 
