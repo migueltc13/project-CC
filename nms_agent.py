@@ -30,6 +30,7 @@ class ClientTCP:
         # Connect to the server
         try:
             self.client_socket.connect((self.server_ip, C.TCP_PORT))
+            self.client_socket.settimeout(1.0)
         except Exception:
             print(f"Error connecting to TCP server {self.server_ip}:{C.TCP_PORT}")
             print("Ensure the server is running and the IP address is correct.")
@@ -53,17 +54,20 @@ class ClientUDP(threading.Thread):
         self.client_socket.settimeout(1.0)
         self.shutdown_flag = threading.Event()
         self.net_task = NetTask(C)
+        self.threads = []
 
     def run(self):
         while not self.shutdown_flag.is_set():
             try:
-                print("DEBUG: Waiting for server response...")  # TODO remove this
                 raw_data, addr = self.client_socket.recvfrom(C.BUFFER_SIZE)
                 if not raw_data:
                     break
 
                 # Create a thread to handle the packet
-                threading.Thread(target=self.handle_packet, args=(raw_data,)).start()
+                handle_packet_thread = threading.Thread(target=self.handle_packet,
+                                                        args=(raw_data,))
+                self.threads.append(handle_packet_thread)
+                handle_packet_thread.start()
             except socket.timeout:
                 continue
             except OSError:  # TODO check this exception
@@ -85,8 +89,19 @@ class ClientUDP(threading.Thread):
         self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
 
     def shutdown(self):
+        # Signal all threads to stop
         self.shutdown_flag.set()
-        self.client_socket.close()
+
+        # Close the socket
+        try:
+            self.client_socket.close()
+        except OSError as e:
+            print(f"Error closing UDP socket: {e}")
+
+        # Wait for all threads to finish
+        for thread in self.threads:
+            if thread.is_alive():
+                thread.join()
 
 
 if __name__ == "__main__":
@@ -115,11 +130,13 @@ if __name__ == "__main__":
         while True:
             pass
     except KeyboardInterrupt:
-        print("Agent shutting down...")
-        print("TODO send EOC to server")  # TODO
+        print("Agent interrupted. Shutting down...")
     finally:
+        print("TODO send EOC to server")  # TODO
         udp_client.shutdown()
         tcp_client.shutdown()
+        udp_client.join()
+        print("Active threads:", threading.enumerate())
 
     # TCP - open a connection for sending critical alerts
     # When running into a critical alert situation, send an alert to the server

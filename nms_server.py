@@ -526,6 +526,8 @@ def main():
         # while the packets to ack are not empty, keep waiting for the acks
         tcp_server.shutdown()
         udp_server.shutdown()
+        tcp_server.join()
+        udp_server.join()
         ui.save_status(server_hostname, "Server shutdown complete.")
         print("Active threads:", threading.enumerate())
 
