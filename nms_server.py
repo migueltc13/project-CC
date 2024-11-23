@@ -454,13 +454,9 @@ class ServerPool:
                 # No packets to reorder to that client, return the packet as is
                 return packet
 
-            # TODO instead of filtering the packets by the msg_type, add a field to the packet
-            # that indicates the message id, so we can filter by that field, and avoid
-            # getting multiple packets with the same msg_type but different metrics, etc.
-
-            # filter only packets with the same message type
+            # filter only packets with the same message id
             packets = [f_packet for f_packet in packets
-                       if f_packet["msg_type"] == packet["msg_type"]]
+                       if f_packet["msg_id"] == packet["msg_id"]]
 
             # reorder packets
             packets.sort(key=lambda x: x["seq_number"])
