@@ -4,6 +4,7 @@
 
 #### Geral
 
+- [ ] TODO server sends identifier of agent instead of its own
 - [ ] *Pool* de agentes conectados, pacotes por processar e pacotes por enviar
 - [ ] *Parsing* de tarefas pelos agentes
 - [ ] Execução e envio dos resultados (métricas e alertas) das tarefas
@@ -29,12 +30,15 @@
 - [ ] Implementar *retransmissão* de pacotes se não houver resposta (ACK)
 - [ ] Fragmentação de pacotes
 - [ ] Controlo de fluxo através do *window size* e *urgent flag*
+- [ ] Implementar *timeout* para retransmissão de pacotes
+- [ ] Adicionar *message id field* para defragmentação/ordenação de pacotes
 
 #### AlertFlow
 
 - [ ] Estrutura do *header*
 - [x] Verificar versão do NMS
-- [ ] Verificar se é preciso implementar fragmentação de pacotes
+- [x] Verificar se é preciso implementar fragmentação de pacotes. Não é necessário, pois os alertas são pequenos.
+- [ ] Tornar AlertFlow *connection-oriented*: uma conexão por alerta(s) de um agente
 
 ## Protocolos Aplicacionais
 
