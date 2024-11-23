@@ -31,13 +31,14 @@ class ClientTCP:
     def __init__(self, server_ip, server_port):
         self.server_ip = server_ip
         self.server_port = server_port
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.alert_flow = AlertFlow(C)
 
-        # Connect to the server
+        # Check TCP connectivity with the server on initialization
         try:
-            self.client_socket.connect((self.server_ip, C.TCP_PORT))
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.settimeout(1.0)
+            self.client_socket.connect((self.server_ip, C.TCP_PORT))
+            self.client_socket.close()
         except Exception:
             print(f"Error connecting to TCP server {self.server_ip}:{C.TCP_PORT}")
             print("Ensure the server is running and the IP address is correct.")
@@ -45,8 +46,19 @@ class ClientTCP:
             sys.exit(1)
 
     def send_alert(self, alert_type, agent_id, data):
+        # Build the packet
         packet = self.alert_flow.build_packet(self.alert_flow, alert_type, agent_id, data)
+
+        # Connect to the server
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.settimeout(1.0)
+        self.client_socket.connect((self.server_ip, C.TCP_PORT))
+
+        # Send the packet
         self.client_socket.send(packet)
+
+        # Close the connection
+        self.client_socket.close()
 
     def shutdown(self):
         self.client_socket.close()
@@ -98,13 +110,18 @@ class ClientUDP(threading.Thread):
         print(f"Received packet: {json.dumps(packet, indent=2)}")
 
     def send_first_connection(self, agent_id):
-        seq_number = 0  # TODO
+        seq_number = 1  # TODO
         flags = {"urgent": 1}
         msg_type = self.net_task.FIRST_CONNECTION
         window_size = 64  # TODO
-        packet = self.net_task.build_packet(self.net_task, "", seq_number, flags,
-                                            msg_type, agent_id, window_size)
-        self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
+        seq_number, packets = self.net_task.build_packet(self.net_task, "", seq_number, flags,
+                                                         msg_type, agent_id, window_size)
+        print(f"Sending {len(packets)} packets for first connection")
+        for packet in packets:
+            self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
+            # TODO remove this
+            tmp_packet = self.net_task.parse_packet(self.net_task, packet)
+            print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
 
     def shutdown(self):
         # Signal all threads to stop
@@ -141,6 +158,7 @@ if __name__ == "__main__":
     udp_client.send_first_connection(agent_id)
 
     # TODO remove this (test alert)
+    # time.sleep(2)
     # tcp_client.send_alert(AlertFlow.CPU_USAGE, agent_id, "Test CPU usage Alert")
 
     try:
