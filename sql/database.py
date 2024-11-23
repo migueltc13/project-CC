@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import mysql.connector as connector
 from mysql.connector import errors
 
+
 # Get the directory with the database files
 db_dir = path.join(path.dirname(path.abspath(__file__)), "")
 

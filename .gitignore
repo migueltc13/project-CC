@@ -2,7 +2,10 @@
 __pycache__/
 sql/__pycache__/
 protocol/__pycache__/
+nms_agent/__pycache__/
+nms_server/__pycache__/
 
+# Ignore latex output files
 report/output/*.log
 report/output/*.aux
 report/output/*.lof
