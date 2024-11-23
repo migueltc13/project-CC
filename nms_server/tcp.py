@@ -65,10 +65,7 @@ class TCP(threading.Thread):
 
                     try:
                         packet = self.alert_flow.parse_packet(self.alert_flow, raw_data)
-                    except InvalidVersionException as e:
-                        self.ui.display_error(e)
-                        break
-                    except InvalidHeaderException as e:
+                    except (InvalidVersionException, InvalidHeaderException) as e:
                         self.ui.display_error(e)
                         break
 
