@@ -19,7 +19,6 @@ class TCP:
         # Check TCP connectivity with the server on initialization
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.settimeout(1.0)
             self.client_socket.connect((self.server_ip, C.TCP_PORT))
             self.client_socket.close()
         except Exception:
@@ -34,7 +33,6 @@ class TCP:
 
         # Connect to the server
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.settimeout(1.0)
         self.client_socket.connect((self.server_ip, C.TCP_PORT))
 
         # Send the packet
