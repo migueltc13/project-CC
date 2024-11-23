@@ -19,6 +19,13 @@ import constants as C
 from protocol.net_task import NetTask
 from protocol.alert_flow import AlertFlow
 
+# NetTask exceptions
+from protocol.net_task import (
+    InvalidVersionException   as NTInvalidVersionException,
+    InvalidHeaderException    as NTInvalidHeaderException,
+    ChecksumMismatchException as NTChecksumMismatchException
+)
+
 
 class ClientTCP:
     def __init__(self, server_ip, server_port):
@@ -75,8 +82,19 @@ class ClientUDP(threading.Thread):
 
     # TODO
     def handle_packet(self, raw_data):
-        packet = self.net_task.parse_packet(self.net_task, raw_data)
-        # TODO catch exceptions
+        try:
+            packet = self.net_task.parse_packet(self.net_task, raw_data)
+        # If any of the exceptions Invalid Header or Checksum Mismatch are raised, the
+        # packet is discarded. By not sending an ACK, the server will resend the packet.
+        except NTInvalidVersionException as e:
+            # This exception doesn't need to interrupt the server. We can just
+            # print a message and try to process the packet anyway.
+            print(e)
+        except (NTInvalidHeaderException, NTChecksumMismatchException) as e:
+            print(e)
+            return
+
+        # TODO remove this (debug only)
         print(f"Received packet: {json.dumps(packet, indent=2)}")
 
     def send_first_connection(self, agent_id):
