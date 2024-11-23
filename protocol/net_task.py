@@ -10,6 +10,7 @@ import struct
 # - Fragment Offset ( 4 bytes)
 # - Window size     ( 2 bytes)
 # - Checksum        ( 2 bytes)
+# - Message ID      ( 2 bytes)
 # - Identifier      (32 bytes) [Default: UTF-8]
 # - Data            ( N bytes) [Default: UTF-8] [If ACK: ACK seq. number]
 
@@ -45,12 +46,13 @@ SIZE_FLAGS_TYPE  = 1
 SIZE_FRAGMENT    = 4
 SIZE_WINDOW_SIZE = 2
 SIZE_CHECKSUM    = 2
+SIZE_MSG_ID      = 2
 SIZE_IDENTIFIER  = 32
 
 # Header total size
 HEADER_SIZE = (SIZE_PACKET_SIZE + SIZE_NMS_VERSION + SIZE_SEQ_NUMBER +
                SIZE_FLAGS_TYPE + SIZE_FRAGMENT + SIZE_WINDOW_SIZE +
-               SIZE_CHECKSUM + SIZE_IDENTIFIER)
+               SIZE_CHECKSUM + SIZE_MSG_ID + SIZE_IDENTIFIER)
 
 # Struct format for the header fields
 # !    network (big-endian) byte order
@@ -58,7 +60,7 @@ HEADER_SIZE = (SIZE_PACKET_SIZE + SIZE_NMS_VERSION + SIZE_SEQ_NUMBER +
 # H    unsigned short      (2 bytes)
 # I    unsigned int        (4 bytes)
 # Xs   string with X chars (X bytes)
-STRUCT_FORMAT = '!I B H B I H H 32s'
+STRUCT_FORMAT = '!I B H B I H H H 32s'
 
 
 ###
@@ -75,18 +77,15 @@ class NetTask:
     def __init__(self, constants):
         self.C = constants
 
-    # Exclude the checksum field from the header and calculate the checksum
-    # TODO make checksum of the total packet as this method is used
-    # when checksum field is padded with 0
+    # Calculate the checksum of a packet, padding the checksum field with 0
     @staticmethod
     def calculate_checksum(packet):
-        # Extract the header without the checksum field plus the data
         checksum_start = (SIZE_PACKET_SIZE + SIZE_NMS_VERSION + SIZE_SEQ_NUMBER +
                           SIZE_FLAGS_TYPE + SIZE_FRAGMENT + SIZE_WINDOW_SIZE)
         checksum_end = checksum_start + SIZE_CHECKSUM
         data = packet[:checksum_start] + packet[checksum_end:]
 
-        # Calculate a 16-bit checksum of the data
+        # Calculate a 16-bit checksum of the packet
         checksum = 0
         for i in range(0, len(data), 2):
             part = data[i:i + 2]
@@ -118,13 +117,14 @@ class NetTask:
                 raise InvalidVersionException(version, self.C.NET_TASK_VERSION)
 
             packet_size, version, seq_number, flags_type, fragment_offset, \
-                window_size, checksum, identifier = struct.unpack(STRUCT_FORMAT, header)
+                window_size, checksum, msg_id, identifier = struct.unpack(STRUCT_FORMAT, header)
 
         except Exception:
             raise InvalidHeaderException()
 
         # Checksum validation
         if self.calculate_checksum(packet) != checksum:
+            print(f"Checksum mismatch: {self.calculate_checksum(packet)} != {checksum}")
             raise ChecksumMismatchException()
 
         # Parse flags and message type
@@ -155,6 +155,7 @@ class NetTask:
                 "fragment_offset": fragment_offset,
                 "window_size": window_size,
                 "checksum": checksum,
+                "msg_id": msg_id,
                 "identifier": identifier.decode(self.C.ENCODING),
                 "ack_number": int.from_bytes(data, byteorder='big')
             }
@@ -174,6 +175,7 @@ class NetTask:
             "fragment_offset": fragment_offset,
             "window_size": window_size,
             "checksum": checksum,
+            "msg_id": msg_id,
             "identifier": identifier.decode(self.C.ENCODING),
             "data": data.decode(self.C.ENCODING)
         }
@@ -207,6 +209,7 @@ class NetTask:
             fragment_offset,
             window_size,
             0,  # Placeholder/padding for checksum
+            seq_number,  # Message ID is the seq number of the packet
             identifier.encode(self.C.ENCODING)
         )
 
@@ -224,6 +227,7 @@ class NetTask:
             fragment_offset,
             window_size,
             checksum,
+            seq_number,  # Message ID is the seq number of the packet
             identifier.encode(self.C.ENCODING)
         )
 
@@ -255,6 +259,7 @@ class NetTask:
             0,  # Fragment offset
             window_size,
             0,  # Placeholder/padding for checksum
+            seq_number,  # Message ID is the seq number of the packet being acknowledged
             identifier.encode(self.C.ENCODING)
         )
 
@@ -273,11 +278,13 @@ class NetTask:
             0,  # Fragment offset
             window_size,
             checksum,
+            seq_number,  # Message ID is the seq number of the packet being acknowledged
             identifier.encode(self.C.ENCODING)
         )
 
         # Return the ack packet with the checksum included in the header
-        return header + packet["seq_number"].to_bytes(2, byteorder='big')
+        return header + ack_number
+
 
 ###
 # Exceptions TODO merge with AlertFlow exceptions
