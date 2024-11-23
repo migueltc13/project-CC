@@ -1,6 +1,7 @@
 # NetTask app protocol for communication between the server and the agents.
 
 import struct
+import constants as C
 
 # NetTask Header:
 # - Packet Size     ( 4 bytes)
@@ -74,9 +75,6 @@ class NetTask:
     SEND_METRICS     = 3
     EOC              = 4
 
-    def __init__(self, constants):
-        self.C = constants
-
     # Calculate the checksum of a packet, padding the checksum field with 0
     @staticmethod
     def calculate_checksum(packet):
@@ -113,8 +111,8 @@ class NetTask:
             # Check if the NMS NetTask version is correct before unpacking the rest of the header
             version = header[SIZE_PACKET_SIZE:SIZE_PACKET_SIZE + SIZE_NMS_VERSION]
             version = int.from_bytes(version, byteorder='big')
-            if version != self.C.NET_TASK_VERSION:
-                raise InvalidVersionException(version, self.C.NET_TASK_VERSION)
+            if version != C.NET_TASK_VERSION:
+                raise InvalidVersionException(version, C.NET_TASK_VERSION)
 
             packet_size, version, seq_number, flags_type, fragment_offset, \
                 window_size, checksum, msg_id, identifier = struct.unpack(STRUCT_FORMAT, header)
@@ -154,10 +152,10 @@ class NetTask:
             "window_size": window_size,
             "checksum": checksum,
             "msg_id": msg_id,
-            "identifier": identifier.decode(self.C.ENCODING),
+            "identifier": identifier.decode(C.ENCODING),
             # If the packet is an ACK, the data field will contain the
             # sequence number of the message being acknowledged
-            "data": (data.decode(self.C.ENCODING)
+            "data": (data.decode(C.ENCODING)
                      if ack_flag == 0
                      else int.from_bytes(data, byteorder='big'))
         }
@@ -174,20 +172,20 @@ class NetTask:
         header = struct.pack(
             STRUCT_FORMAT,
             packet_size,
-            self.C.NET_TASK_VERSION,
+            C.NET_TASK_VERSION,
             seq_number,
             flags_type,
             fragment_offset,
             window_size,
             0,  # Placeholder for checksum
             msg_id,
-            identifier.encode(self.C.ENCODING)
+            identifier.encode(C.ENCODING)
         )
 
         # Concatenate header and data to calculate the checksum
         if not is_ack:
             if isinstance(data, str):
-                data = data.encode(self.C.ENCODING)
+                data = data.encode(C.ENCODING)
         else:
             data = data.to_bytes(2, byteorder='big')
         packet = header + data
@@ -197,14 +195,14 @@ class NetTask:
         header = struct.pack(
             STRUCT_FORMAT,
             packet_size,
-            self.C.NET_TASK_VERSION,
+            C.NET_TASK_VERSION,
             seq_number,
             flags_type,
             fragment_offset,
             window_size,
             checksum,
             msg_id,
-            identifier.encode(self.C.ENCODING)
+            identifier.encode(C.ENCODING)
         )
 
         return header
@@ -213,7 +211,7 @@ class NetTask:
     def build_packet(self, data, seq_number, flags, msg_type, identifier, window_size):
 
         if isinstance(data, str):
-            data = data.encode(self.C.ENCODING)
+            data = data.encode(C.ENCODING)
 
         # Set flags and type field
         flags_type = (
@@ -229,7 +227,7 @@ class NetTask:
         msg_id = seq_number
 
         # Split the data to fragments of size NET_TASK_BUFFER_SIZE (default: 1500 bytes)
-        data_chunk_size = self.C.BUFFER_SIZE - HEADER_SIZE
+        data_chunk_size = C.BUFFER_SIZE - HEADER_SIZE
 
         data_segments = ([data[i:i + data_chunk_size]
                          for i in range(0, len(data), data_chunk_size)] or [b""])

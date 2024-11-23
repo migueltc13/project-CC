@@ -160,7 +160,7 @@ class TCPServer(threading.Thread):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.settimeout(1.0)
         self.shutdown_flag = threading.Event()
-        self.alert_flow = AlertFlow(C)
+        self.alert_flow = AlertFlow()
         self.threads = []
 
         # Start the TCP server
@@ -240,7 +240,7 @@ class UDPServer(threading.Thread):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.server_socket.settimeout(1.0)
         self.shutdown_flag = threading.Event()
-        self.net_task = NetTask(C)
+        self.net_task = NetTask()
         self.pool = pool
         self.lock = threading.Lock()
         self.threads = []

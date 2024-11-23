@@ -1,6 +1,7 @@
 # AlertFlow app protocol for communication between the server and the clients.
 
 import struct
+import constants as C
 
 # AlertFlow header:
 # - Packet Size         ( 4 bytes)
@@ -75,9 +76,6 @@ class AlertFlow:
             case _:
                 return "Unknown alert type"
 
-    def __init__(self, constants):
-        self.C = constants
-
     @staticmethod
     def parse_packet(self, packet):
         # Extract the header and data
@@ -89,8 +87,8 @@ class AlertFlow:
             # Check if the NMS AlertFlow version is correct before unpacking the rest of the header
             version = header[SIZE_PACKET_SIZE:SIZE_PACKET_SIZE + SIZE_NMS_VERSION]
             version = int.from_bytes(version, byteorder='big')
-            if version != self.C.ALERT_FLOW_VERSION:
-                raise InvalidVersionException(version, self.C.ALERT_FLOW_VERSION)
+            if version != C.ALERT_FLOW_VERSION:
+                raise InvalidVersionException(version, C.ALERT_FLOW_VERSION)
 
             packet_size, version, alert_type, identifier = struct.unpack(STRUCT_FORMAT, header)
         except Exception:
@@ -103,8 +101,8 @@ class AlertFlow:
             "packet_size": packet_size,
             "version": version,
             "alert_type": alert_type,
-            "identifier": identifier.decode(self.C.ENCODING),
-            "data": data.decode(self.C.ENCODING)
+            "identifier": identifier.decode(C.ENCODING),
+            "data": data.decode(C.ENCODING)
         }
 
     @staticmethod
@@ -116,12 +114,12 @@ class AlertFlow:
         header = struct.pack(
             STRUCT_FORMAT,
             packet_size,
-            self.C.ALERT_FLOW_VERSION,
+            C.ALERT_FLOW_VERSION,
             alert_type,
-            identifier.encode(self.C.ENCODING)
+            identifier.encode(C.ENCODING)
         )
 
-        return header + data.encode(self.C.ENCODING)
+        return header + data.encode(C.ENCODING)
 
 
 ###

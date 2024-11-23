@@ -31,7 +31,7 @@ class ClientTCP:
     def __init__(self, server_ip, server_port):
         self.server_ip = server_ip
         self.server_port = server_port
-        self.alert_flow = AlertFlow(C)
+        self.alert_flow = AlertFlow()
 
         # Check TCP connectivity with the server on initialization
         try:
@@ -72,7 +72,7 @@ class ClientUDP(threading.Thread):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.client_socket.settimeout(1.0)
         self.shutdown_flag = threading.Event()
-        self.net_task = NetTask(C)
+        self.net_task = NetTask()
         self.threads = []
 
     def run(self):
@@ -158,8 +158,7 @@ if __name__ == "__main__":
     udp_client.send_first_connection(agent_id)
 
     # TODO remove this (test alert)
-    # time.sleep(2)
-    # tcp_client.send_alert(AlertFlow.CPU_USAGE, agent_id, "Test CPU usage Alert")
+    tcp_client.send_alert(AlertFlow.CPU_USAGE, agent_id, "Test CPU usage Alert")
 
     try:
         # Loop to keep the main thread running
