@@ -1,5 +1,39 @@
 # CC TP2
 
+## Project Structure
+
+```
+.
+├── config
+│   └── config.json
+├── nms_agent
+│   ├── __init__.py
+│   ├── tcp.py
+│   └── udp.py
+├── nms_server
+│   ├── __init__.py
+│   ├── config.py
+│   ├── pool.py
+│   ├── tcp.py
+│   ├── udp.py
+│   └── ui.py
+├── protocol
+│   ├── exceptions
+│   │   ├── checksum_mismatch.py
+│   │   ├── invalid_header.py
+│   │   └── invalid_version.py
+│   ├── alert_flow.py
+│   └── net_task.py
+├── sql
+│   ├── create/
+│   ├── populate/
+│   ├── queries/
+│   └── database.py
+├── constants.py
+├── nms_agent.py
+└── nms_server.py
+```
+
 ### To Do List
 
 #### Geral
