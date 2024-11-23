@@ -138,28 +138,6 @@ class NetTask:
         # Remove padding from the identifier
         identifier = identifier.rstrip(b'\x00')
 
-        if ack_flag:
-            # Convert data to int (sequence number)
-            return {
-                "packet_size": packet_size,
-                "version": version,
-                "seq_number": seq_number,
-                "flags": {
-                    "ack": ack_flag,
-                    "retransmission": retransmission_flag,
-                    "urgent": urgent_flag,
-                    "window_probe": window_probe_flag,
-                    "more_fragments": more_fragments_flag,
-                },
-                "msg_type": msg_type,
-                "fragment_offset": fragment_offset,
-                "window_size": window_size,
-                "checksum": checksum,
-                "msg_id": msg_id,
-                "identifier": identifier.decode(self.C.ENCODING),
-                "ack_number": int.from_bytes(data, byteorder='big')
-            }
-
         return {
             "packet_size": packet_size,
             "version": version,
@@ -177,27 +155,20 @@ class NetTask:
             "checksum": checksum,
             "msg_id": msg_id,
             "identifier": identifier.decode(self.C.ENCODING),
-            "data": data.decode(self.C.ENCODING)
+            # If the packet is an ACK, the data field will contain the
+            # sequence number of the message being acknowledged
+            "data": (data.decode(self.C.ENCODING)
+                     if ack_flag == 0
+                     else int.from_bytes(data, byteorder='big'))
         }
 
     @staticmethod
-    def build_packet(self, data, seq_number, flags, msg_type, identifier, window_size):
-        # Calculate packet size
-        packet_size = HEADER_SIZE + len(data)
+    def build_header(self, seq_number, flags_type, fragment_offset,
+                     window_size, msg_id, identifier, data, is_ack=False):
 
-        # Set flags and type field
-        flags_type = (
-            (flags.get("ack",            0) << 7) |
-            (flags.get("retransmission", 0) << 6) |
-            (flags.get("urgent",         0) << 5) |
-            (flags.get("window_probe",   0) << 4) |
-            (flags.get("more_fragments", 0) << 3) |
-            (msg_type & 0b00000111)
-        )
-
-        # TODO How to define the sequence number?
-        # TODO Check if fragmentation is needed (set more fragments flag and fragment offset)
-        fragment_offset = 0
+        packet_size = (HEADER_SIZE + len(data)
+                       if not is_ack
+                       else HEADER_SIZE + SIZE_SEQ_NUMBER)
 
         # Initial header with checksum set to 0
         header = struct.pack(
@@ -208,13 +179,18 @@ class NetTask:
             flags_type,
             fragment_offset,
             window_size,
-            0,  # Placeholder/padding for checksum
-            seq_number,  # Message ID is the seq number of the packet
+            0,  # Placeholder for checksum
+            msg_id,
             identifier.encode(self.C.ENCODING)
         )
 
         # Concatenate header and data to calculate the checksum
-        packet = header + data.encode(self.C.ENCODING)
+        if not is_ack:
+            if isinstance(data, str):
+                data = data.encode(self.C.ENCODING)
+        else:
+            data = data.to_bytes(2, byteorder='big')
+        packet = header + data
         checksum = self.calculate_checksum(packet)
 
         # Repack the header with the actual checksum
@@ -227,17 +203,63 @@ class NetTask:
             fragment_offset,
             window_size,
             checksum,
-            seq_number,  # Message ID is the seq number of the packet
+            msg_id,
             identifier.encode(self.C.ENCODING)
         )
 
-        # Return the packet with the checksum included in the header
-        return header + data.encode(self.C.ENCODING)
+        return header
+
+    @staticmethod
+    def build_packet(self, data, seq_number, flags, msg_type, identifier, window_size):
+
+        if isinstance(data, str):
+            data = data.encode(self.C.ENCODING)
+
+        # Set flags and type field
+        flags_type = (
+            (flags.get("ack",            0) << 7) |
+            (flags.get("retransmission", 0) << 6) |
+            (flags.get("urgent",         0) << 5) |
+            (flags.get("window_probe",   0) << 4) |
+            (flags.get("more_fragments", 0) << 3) |
+            (msg_type & 0b00000111)
+        )
+
+        packets = []
+        msg_id = seq_number
+
+        # Split the data to fragments of size NET_TASK_BUFFER_SIZE (default: 1500 bytes)
+        data_chunk_size = self.C.BUFFER_SIZE - HEADER_SIZE
+
+        data_segments = ([data[i:i + data_chunk_size]
+                         for i in range(0, len(data), data_chunk_size)] or [b""])
+
+        for i, data_segment in enumerate(data_segments):
+            fragment_offset = i * (len(data_segment) + HEADER_SIZE)
+
+            # Set the "more_fragments" flag
+            flags["more_fragments"] = 1 if i < len(data_segments) - 1 else 0
+
+            # Build the header
+            header = self.build_header(self,
+                                       seq_number,
+                                       flags_type,
+                                       fragment_offset,
+                                       window_size,
+                                       msg_id,
+                                       identifier,
+                                       data_segment)
+
+            # Build the packet and append it to the list
+            packet = header + data_segment
+            packets.append(packet)
+
+            # Increment the sequence number for the next fragment
+            seq_number += 1
+
+        return seq_number, packets
 
     def build_ack_packet(self, packet, seq_number, identifier, window_size):
-        # Calculate packet size
-        packet_size = HEADER_SIZE + SIZE_SEQ_NUMBER
-
         # Set the appropriate flags for the ACK packet combine the remaining
         # flags and type of the packet being acknowledged
         flags_type = (
@@ -249,41 +271,20 @@ class NetTask:
             (packet["msg_type"] & 0b00000111)
         )
 
-        # Initial header with checksum set to 0
-        header = struct.pack(
-            STRUCT_FORMAT,
-            packet_size,
-            self.C.NET_TASK_VERSION,
-            seq_number,
-            flags_type,
-            0,  # Fragment offset
-            window_size,
-            0,  # Placeholder/padding for checksum
-            seq_number,  # Message ID is the seq number of the packet being acknowledged
-            identifier.encode(self.C.ENCODING)
-        )
+        ack_number = packet["seq_number"]
 
-        # Concatenate header and data to calculate the checksum
-        ack_number = packet["seq_number"].to_bytes(2, byteorder='big')
-        ack_packet = header + ack_number
-        checksum = self.calculate_checksum(ack_packet)
+        # Build the header
+        header = self.build_header(self,
+                                   seq_number,
+                                   flags_type,
+                                   0,           # No fragment offset
+                                   window_size,
+                                   seq_number,  # Message ID: seq nr of the packet to acknowledge
+                                   identifier,
+                                   ack_number,  # Data: seq nr of the packet to acknowledge
+                                   is_ack=True)
 
-        # Repack the header with the actual checksum
-        header = struct.pack(
-            STRUCT_FORMAT,
-            packet_size,
-            self.C.NET_TASK_VERSION,
-            seq_number,
-            flags_type,
-            0,  # Fragment offset
-            window_size,
-            checksum,
-            seq_number,  # Message ID is the seq number of the packet being acknowledged
-            identifier.encode(self.C.ENCODING)
-        )
-
-        # Return the ack packet with the checksum included in the header
-        return header + ack_number
+        return seq_number + 1, header + ack_number.to_bytes(2, byteorder='big')
 
 
 ###
