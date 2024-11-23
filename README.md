@@ -31,7 +31,8 @@
 │   └── database.py
 ├── constants.py
 ├── nms_agent.py
-└── nms_server.py
+├── nms_server.py
+└── requirements.txt
 ```
 
 ### To Do List
