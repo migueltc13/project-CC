@@ -59,6 +59,7 @@
 - [x] Implementar *timeout* para retransmissão de pacotes
 - [x] Adicionar *message id field* para desfragmentação/ordenação de pacotes
 - [ ] EOC (End of Connection) packet and logic
+- [ ] Determinar o uso do campo *packet size* (pouco, uma vez que UDP é orientado a datagramas)
 
 #### AlertFlow
 
@@ -66,6 +67,7 @@
 - [x] Verificar versão do NMS
 - [x] Verificar se é preciso implementar fragmentação de pacotes. Não é necessário, pois os alertas são pequenos.
 - [x] Tornar AlertFlow *connection-oriented*: uma conexão por alerta(s) de um agente
+- [ ] Determinar o uso do campo *packet size* (pouco, se tomarmos uma abordagem *connection-oriented*)
 
 ## Protocolos Aplicacionais
 
