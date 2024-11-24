@@ -148,15 +148,12 @@ class UDP(threading.Thread):
             case self.net_task.EOC:
                 self.pool.remove_client(agent_id)
 
-        # self.ui.save_metric(packet["identifier"], f"Metric data: {packet['data']}")
-
         # Send ACK
         seq_number = self.pool.increment_seq_number(agent_id)
         print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
-        identifier = self.server_hostname
         window_size = self.pool.get_window_size()
         seq_number, ack_packet = self.net_task.build_ack_packet(packet, seq_number,
-                                                                identifier, window_size)
+                                                                agent_id, window_size)
 
         # Increment the sequence number for the agent
         # TODO check if the sequence number is correct between agent and server
