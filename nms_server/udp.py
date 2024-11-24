@@ -2,8 +2,6 @@ import socket
 import threading
 import sys
 import time
-
-# TODO remove json import
 import json
 
 import constants as C
@@ -17,7 +15,7 @@ from protocol.exceptions.checksum_mismatch import ChecksumMismatchException
 
 
 class UDP(threading.Thread):
-    def __init__(self, ui, pool, host='0.0.0.0'):
+    def __init__(self, ui, pool, verbose=False, host='0.0.0.0'):
         super().__init__(daemon=True)
         self.ui = ui
         self.host = host
@@ -30,6 +28,7 @@ class UDP(threading.Thread):
         self.pool = pool
         self.lock = threading.Lock()
         self.threads = []
+        self.verbose = verbose
 
         # Start the UDP server
         try:
@@ -39,7 +38,7 @@ class UDP(threading.Thread):
         except OSError:
             self.ui.display_error(f"UDP port {self.port} is already in use. Exiting.")
             sys.exit(1)
-        self.ui.save_status(self.server_hostname, f"UDP Server started on port {self.port}")
+        self.ui.save_status(f"UDP Server started on port {self.port}")
 
         # Retransmit packets to be acknowledged
         ret_thread = threading.Thread(target=self.retransmit_packets)
@@ -78,7 +77,7 @@ class UDP(threading.Thread):
                 handle_packet_thread.start()
             except socket.timeout:
                 continue
-            except OSError:  # TODO check this exception
+            except OSError:
                 break
 
     def handle_packet(self, raw_data, addr):
@@ -94,8 +93,8 @@ class UDP(threading.Thread):
             self.ui.display_error(e)
             return
 
-        # TODO remove this (debug only)
-        print(f"Received packet: {json.dumps(packet, indent=2)}")
+        if self.verbose and self.ui.view_mode:
+            print(f"Received packet: {json.dumps(packet, indent=2)}")
 
         agent_id = packet["identifier"]
 
@@ -141,7 +140,8 @@ class UDP(threading.Thread):
 
         # Send ACK
         seq_number = self.pool.inc_seq_number(agent_id)
-        print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")  # TODO remove this
+        if self.verbose and self.ui.view_mode:
+            print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
         window_size = self.pool.get_window_size()
         seq_number, ack_packet = self.net_task.build_ack_packet(packet, seq_number,
                                                                 agent_id, window_size)

@@ -35,7 +35,7 @@ class TCP(threading.Thread):
         except OSError:
             self.ui.display_error(f"TCP port {self.port} is already in use. Exiting.")
             sys.exit(1)
-        self.ui.save_status(self.server_hostname, f"TCP Server started on port {self.port}")
+        self.ui.save_status(f"TCP Server started on port {self.port}")
 
     def run(self):
         while not self.shutdown_flag.is_set():
@@ -43,7 +43,7 @@ class TCP(threading.Thread):
                 client_socket, addr = self.server_socket.accept()
                 client_socket.settimeout(1.0)
 
-                self.ui.save_status(self.server_hostname, f"TCP connection received from {addr}")
+                self.ui.save_status(f"TCP connection received from {addr}")
 
                 # Create a thread to handle the client socket
                 handle_client_thread = threading.Thread(target=self.handle_client,
@@ -52,7 +52,7 @@ class TCP(threading.Thread):
                 handle_client_thread.start()
             except socket.timeout:
                 pass
-            except OSError:  # TODO check this exception
+            except OSError:
                 break
 
     def handle_client(self, client_socket):

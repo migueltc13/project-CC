@@ -4,21 +4,22 @@ import sql.database as db
 
 
 class UI:
-    def __init__(self, server_hostname, pool):
+    def __init__(self, server_hostname, pool, verbose=False):
         self.running = True
         self.view_mode = False  # Real-time view mode
         self.server_hostname = server_hostname
         self.pool = pool
+        self.verbose = verbose
 
     def display_title(self):
         print("========================================")
         print("    Network Management System Server    ")
         print("========================================")
 
-    def save_status(self, hostname, message):
-        db.operation.insert(db.values.log_type.STATUS, hostname, message)
+    def save_status(self, message):
+        db.operation.insert(db.values.log_type.STATUS, self.server_hostname, message)
         if self.view_mode:
-            print(f"[STATUS] ({hostname}) {message}")
+            print(f"[STATUS] ({self.server_hostname}) {message}")
 
     def save_alert(self, hostname, alert_type, message):
         db.operation.insert(db.values.log_type.ALERT,  hostname, message)
@@ -70,11 +71,11 @@ class UI:
                     print(f"{len(agents)} Connected Agents:")
                     for agent in agents:
                         print(f"Agent: {agent}")
-                        # TODO remove the following prints
-                        print(f"Address: {agents[agent]}")
-                        print(f"Sequence Number: {self.pool.get_seq_number(agent)}")
-                        print(f"Packets to Ack: {self.pool.packets_to_ack[agent]}")
-                        print(f"Packets to Reorder: {self.pool.packets_to_reorder[agent]}")
+                        if self.verbose:
+                            print(f"Address: {agents[agent]}")
+                            print(f"Sequence Number: {self.pool.get_seq_number(agent)}")
+                            print(f"Packets to Ack: {self.pool.packets_to_ack[agent]}")
+                            print(f"Packets to Reorder: {self.pool.packets_to_reorder[agent]}")
             case 4:
                 self.display_info("Shutting down server...")
                 self.running = False
