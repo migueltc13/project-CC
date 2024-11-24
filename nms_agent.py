@@ -5,8 +5,11 @@ import threading
 import sys
 import argparse
 
-from nms_agent import ClientTCP
-from nms_agent import ClientUDP
+from nms_agent import (
+    ClientTCP,
+    ClientUDP,
+    ClientPool
+)
 
 
 def main():
@@ -20,8 +23,10 @@ def main():
     server_ip = args.server
     agent_id = socket.gethostname()
 
-    udp_client = ClientUDP(server_ip)
+    pool = ClientPool()
+
     tcp_client = ClientTCP(server_ip)
+    udp_client = ClientUDP(server_ip)
 
     # Start listening for server responses (NetTask)
     udp_client.start()
