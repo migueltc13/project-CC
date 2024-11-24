@@ -29,8 +29,8 @@ def main():
     # First connection to the server
     udp_client.send_first_connection(agent_id)
 
-    # TODO remove this (test alert) (AlertFlow.CPU_USAGE = 0)
-    tcp_client.send_alert(0, agent_id, "Test CPU usage Alert")
+    # Test alert (AlertFlow.CPU_USAGE = 0)
+    # tcp_client.send_alert(0, agent_id, "Test CPU usage Alert")
 
     try:
         # Loop to keep the main thread running
