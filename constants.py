@@ -21,3 +21,6 @@ INITIAL_WINDOW_SIZE = 64
 
 # Time to sleep before retransmitting packets
 RETRANSMIT_SLEEP_TIME = 5  # seconds
+
+# Timout for end of connection acknowledgments
+EOC_ACK_TIMEOUT = 10  # seconds

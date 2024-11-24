@@ -76,6 +76,11 @@ class Pool:
         with self.lock:
             return self.packets_to_ack[client]
 
+    def get_nr_packets_to_ack(self):
+        with self.lock:
+            return sum([len(self.packets_to_ack[client])
+                        for client in self.packets_to_ack])
+
     ###
     # Packets received to be reordered and defragmented
     # Window size

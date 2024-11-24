@@ -4,6 +4,10 @@ import socket
 import threading
 import sys
 import argparse
+import time
+
+
+from constants import EOC_ACK_TIMEOUT
 
 from nms_server import (
     ServerUI,
@@ -50,15 +54,29 @@ def main():
     except (KeyboardInterrupt, EOFError):
         ui.display_info("Server interrupted. Shutting down...")
     finally:
-        # TODO send EOC to all connected agents
-        # while the packets to ack are not empty, keep waiting for the acks
+        # Send EOC to all agents and await until the agents send the ACK
+        # or after some seconds, if the agents don't respond, shutdown the server
+        udp_server.send_end_of_connection()
+        start_time = time.time()
+        while (pool.get_nr_packets_to_ack() > 0 and
+               time.time() - start_time < EOC_ACK_TIMEOUT):
+            if args.verbose:
+                print(f"Nr of packs to be acknowledged: {pool.get_nr_packets_to_ack()}")
+                print(f"Time elapsed: {time.time() - start_time}")
+            time.sleep(0.1)
+
+        # Shutdown the servers and await until the threads finish
         tcp_server.shutdown()
         udp_server.shutdown()
         tcp_server.join()
         udp_server.join()
-        ui.save_status("Server shutdown complete.")
+
+        # Display the active threads if verbose mode is enabled
         if (args.verbose):
             print("Active threads:", threading.enumerate())
+
+        # Log the server shutdown
+        ui.save_status("Server shutdown complete.")
 
     sys.exit(0)
 

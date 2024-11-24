@@ -129,6 +129,7 @@ class UDP(threading.Thread):
         # - First connection: add the client to the clients pool
         # - Task Metric: save the metric, after parsing data (also save the agent hostname)
         # - End of connection: remove the client from the clients pool
+        eoc_received = False
         match packet["msg_type"]:
             case self.net_task.FIRST_CONNECTION:
                 self.pool.add_client(agent_id, addr)
@@ -136,7 +137,7 @@ class UDP(threading.Thread):
                 # self.ui.save_metric(agent_id, f"Metric data: {packet['data']}")
                 print("TODO save metric")  # TODO
             case self.net_task.EOC:
-                self.pool.remove_client(agent_id)
+                eoc_received = True
 
         # Send ACK
         seq_number = self.pool.inc_seq_number(agent_id)
@@ -152,6 +153,37 @@ class UDP(threading.Thread):
 
         with self.lock:
             self.server_socket.sendto(ack_packet, addr)
+
+        if eoc_received:
+            self.pool.remove_client(agent_id)
+            self.ui.save_status(f"Agent {agent_id} disconnected.")
+
+    def send_end_of_connection(self):
+        # Get the connected agents and respective addresses
+        agents = self.pool.get_connected_clients()
+
+        # For each agent, send the EOC packet
+        for agent in agents:
+            addr = agents[agent]
+            seq_number = self.pool.inc_seq_number(agent)
+            flags = {"urgent": 1}
+            msg_type = self.net_task.EOC
+            window_size = self.pool.get_window_size()
+            seq_number, eoc_packets = self.net_task.build_packet(self.net_task, "", seq_number,
+                                                                 flags, msg_type, agent,
+                                                                 window_size)
+
+            for eoc_packet in eoc_packets:
+                with self.lock:
+                    self.server_socket.sendto(eoc_packet, addr)
+
+                # parse the packet to save it in the list of packets to be acknowledged
+                tmp_packet = self.net_task.parse_packet(self.net_task, eoc_packet)
+                # add the packet to the list of packets to be acknowledged
+                self.pool.add_packet_to_ack(agent, tmp_packet)
+
+                if self.verbose:
+                    print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
 
     def shutdown(self):
         # Signal all threads to stop

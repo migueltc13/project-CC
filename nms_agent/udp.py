@@ -102,18 +102,14 @@ class UDP(threading.Thread):
 
         # Based on the packet type:
         # - Send task: process the task and start running it, sending metrics back to the server
-        # - EOC: end of connection, send a ACK, sleep for a while and shutdown the agent
+        # - EOC (End of Connection): send a ACK and shutdown the agent
+        eoc_received = False
         match packet["msg_type"]:
             case self.net_task.SEND_TASK:
                 # TODO add to the task queue/list/class
                 pass
             case self.net_task.EOC:
-                # # TODO send ACK
-                # # Sleep for a while
-                # time.sleep(C.EOC_SLEEP_TIME)
-                # # Shutdown the agent
-                # self.shutdown_flag.set()
-                pass
+                eoc_received = True
 
         # Send ACK
         seq_number = self.pool.inc_seq_number()
@@ -130,6 +126,9 @@ class UDP(threading.Thread):
         with self.lock:
             self.client_socket.sendto(ack_packet, (self.server_ip, C.UDP_PORT))
 
+        if eoc_received:
+            self.shutdown_flag.set()
+
     def send_first_connection(self):
         seq_number = self.pool.get_seq_number()
         flags = {"urgent": 1}
@@ -141,6 +140,27 @@ class UDP(threading.Thread):
         # This loop will only run once, since the first connection packet is small (50 bytes)
         for packet in packets:
             # send the packet to the server
+            self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
+
+            # parse the packet to save it in the list of packets to be acknowledged
+            tmp_packet = self.net_task.parse_packet(self.net_task, packet)
+            # add the packet to the list of packets to be acknowledged
+            self.pool.add_packet_to_ack(tmp_packet)
+
+            if self.verbose:
+                print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
+
+    # TODO: def send_metric(self, metric):
+
+    def send_end_of_connection(self):
+        seq_number = self.pool.get_seq_number()
+        flags = {"urgent": 1}
+        msg_type = self.net_task.EOC
+        window_size = self.pool.get_window_size()
+        seq_number, packets = self.net_task.build_packet(self.net_task, "", seq_number, flags,
+                                                         msg_type, self.agent_id, window_size)
+
+        for packet in packets:
             self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
 
             # parse the packet to save it in the list of packets to be acknowledged

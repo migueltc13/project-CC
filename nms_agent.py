@@ -4,6 +4,10 @@ import socket
 import threading
 import sys
 import argparse
+import time
+
+
+from constants import EOC_ACK_TIMEOUT
 
 from nms_agent import (
     ClientTCP,
@@ -41,15 +45,29 @@ def main():
 
     try:
         # Loop to keep the main thread running
-        while True:
-            pass
+        while udp_client.shutdown_flag.is_set() is False:
+            time.sleep(0.1)
     except KeyboardInterrupt:
         print("Agent interrupted. Shutting down...")
     finally:
-        # TODO send EOC to the server
+        # Send EOC to the server and await until the server sends the ACK
+        # or after some seconds, if the server doesn't respond, shutdown the agent
+        udp_client.send_end_of_connection()
+        start_time = time.time()
+        while (pool.get_nr_packets_to_ack() > 0 and
+               time.time() - start_time < EOC_ACK_TIMEOUT):
+            if args.verbose:
+                print(f"Nr of packs to be acknowledged: {pool.get_nr_packets_to_ack()}")
+                print(f"Packet(s) to be acknowledged: {pool.packets_to_ack}")
+                print(f"Time elapsed: {time.time() - start_time}")
+            time.sleep(0.1)
+
+        # Shutdown the clients and await until the threads finish
         udp_client.shutdown()
         tcp_client.shutdown()
         udp_client.join()
+
+        # Display the active threads if verbose mode is enabled
         if args.verbose:
             print("Active threads:", threading.enumerate())
 
