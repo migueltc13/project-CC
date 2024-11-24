@@ -1,8 +1,6 @@
 import threading
 
-
-# Initial window size for flow control, as the space available in the server buffer
-INITIAL_WINDOW_SIZE = 64
+from constants import INITIAL_WINDOW_SIZE
 
 
 class Pool:
@@ -18,6 +16,10 @@ class Pool:
         self.packets_to_reorder = dict()
         self.window_size = INITIAL_WINDOW_SIZE
         self.lock = threading.Lock()
+
+    ###
+    # Clients
+    ###
 
     def add_client(self, client, addr):
         with self.lock:
@@ -37,6 +39,10 @@ class Pool:
         with self.lock:
             return self.clients
 
+    ###
+    # Sequence numbers
+    ###
+
     def get_seq_number(self, client):
         with self.lock:
             return self.seq_numbers[client]
@@ -45,10 +51,14 @@ class Pool:
         with self.lock:
             self.seq_numbers[client] = seq_number
 
-    def increment_seq_number(self, client):
+    def inc_seq_number(self, client):
         with self.lock:
             self.seq_numbers[client] += 1
             return self.seq_numbers[client]
+
+    ###
+    # Packets sent to be acknowledged
+    ###
 
     def add_packet_to_ack(self, client, packet):
         with self.lock:
@@ -62,27 +72,32 @@ class Pool:
         with self.lock:
             return self.packets_to_ack[client]
 
+    ###
+    # Packets received to be reordered and defragmented
+    # Window size
+    ###
+
     def add_packet_to_reorder(self, client, packet):
         with self.lock:
             self.packets_to_reorder[client].append(packet)
             self.window_size -= 1
 
     def reorder_packets(self, client, packet):
+        try:
+            # Add the packet to the list of packets to reorder
+            self.add_packet_to_reorder(client, packet)
+        except KeyError:
+            # No packets to reorder from that client, return the packet as is
+            return packet
+
         with self.lock:
-            try:
-                # Add the packet to the list of packets to reorder
-                self.packets_to_reorder[client].append(packet)
-                self.window_size -= 1
-                packets = self.packets_to_reorder[client]
-            except KeyError:
-                # No packets to reorder to that client, return the packet as is
-                return packet
+            packets = self.packets_to_reorder[client]
 
             # filter only packets with the same message id
             packets = [f_packet for f_packet in packets
                        if f_packet["msg_id"] == packet["msg_id"]]
 
-            # reorder packets
+            # reorder packets by sequence number
             packets.sort(key=lambda x: x["seq_number"])
 
             # defragment data by concatenating the data of all packets
@@ -94,10 +109,15 @@ class Pool:
             self.window_size += len(packets)
 
             # remove the defragmented packets from the list of packets to reorder
-            self.packets_to_reorder[client] = [packet for packet in self.packets_to_reorder[client]
-                                               if packet not in packets]
+            self.packets_to_reorder[client] = [f_packet
+                                               for f_packet in self.packets_to_reorder[client]
+                                               if f_packet not in packets]
 
-            return packet
+            return packet  # packet with defragmented data
+
+    ###
+    # Window size
+    ###
 
     def get_window_size(self):
         with self.lock:

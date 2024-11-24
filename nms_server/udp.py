@@ -149,7 +149,7 @@ class UDP(threading.Thread):
                 self.pool.remove_client(agent_id)
 
         # Send ACK
-        seq_number = self.pool.increment_seq_number(agent_id)
+        seq_number = self.pool.inc_seq_number(agent_id)
         print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
         window_size = self.pool.get_window_size()
         seq_number, ack_packet = self.net_task.build_ack_packet(packet, seq_number,
