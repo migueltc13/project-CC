@@ -1,4 +1,4 @@
-# CC TP2
+# CC
 
 ## Project Structure
 
@@ -39,41 +39,33 @@
 
 #### Geral
 
-- [ ] TODO server sends identifier of agent instead of its own
-- [ ] *Pool* de agentes conectados, pacotes por processar e pacotes por enviar
+- [x] server sends identifier of agent instead of its own
+- [x] *Pool* de agentes conectados, pacotes por processar e pacotes por enviar
 - [ ] *Parsing* de tarefas pelos agentes
 - [ ] Execução e envio dos resultados (métricas e alertas) das tarefas
 - [ ] *Parsing* dos resultados pelo servidor
-- [ ] Adicionar tabelas de base de dados para armazenar métricas e alertas
-
-#### Pool (Server)
-
-- List of connected agents
-  - Add agent when server receives the first connection packet
-  - Remove agent when server receives a EOC (end of connection) packet
-
-- For each agent store:
-  - List of packets sent yet to be acknowledged
-  - List of packets received yet to be reordered and defragmented
+- [ ] Adicionar tabelas de base de dados para armazenar métricas
+- [x] Adicionar tabelas de base de dados para armazenar alertas (+/-)
 
 #### NetTask
 
 - [x] Estrutura do *header*
 - [x] Verificar versão do NMS
 - [x] Realizar e validar *checksum*
-- [ ] Pensar sobre o número de sequência (opção: para cada agente, numerá-lo de forma sequencial, problema: identificar os ACKs?)
-- [ ] Implementar *retransmissão* de pacotes se não houver resposta (ACK)
-- [ ] Fragmentação de pacotes
+- [x] Definir número de sequência
+- [x] Implementar *retransmissão* de pacotes se não houver resposta (ACK)
+- [x] Fragmentação de pacotes
 - [ ] Controlo de fluxo através do *window size* e *urgent flag*
-- [ ] Implementar *timeout* para retransmissão de pacotes
-- [ ] Adicionar *message id field* para defragmentação/ordenação de pacotes
+- [x] Implementar *timeout* para retransmissão de pacotes
+- [x] Adicionar *message id field* para desfragmentação/ordenação de pacotes
+- [ ] EOC (End of Connection) packet and logic
 
 #### AlertFlow
 
 - [ ] Estrutura do *header*
 - [x] Verificar versão do NMS
 - [x] Verificar se é preciso implementar fragmentação de pacotes. Não é necessário, pois os alertas são pequenos.
-- [ ] Tornar AlertFlow *connection-oriented*: uma conexão por alerta(s) de um agente
+- [x] Tornar AlertFlow *connection-oriented*: uma conexão por alerta(s) de um agente
 
 ## Protocolos Aplicacionais
 
@@ -93,21 +85,6 @@ Types of Alerts:
 - Jitter
 
 ### Q&A
-
-***Q*: How does TCP handle out of order packets?**
-
-*A*: TCP uses sequence numbers to order packets.
-If a packet arrives out of order, it is stored in a buffer until the missing packets arrive.
-When the missing packets arrive, the packets are reassembled in the correct order.
-
-***Q*: How does TCP detect errors?**
-
-*A*: TCP uses a checksum to detect errors.
-If the checksum does not match the calculated checksum, the packet is *discarded*.
-
-***Q*: How does TCP correct errors?**
-
-*A*: TCP does not correct errors.
 
 ***Q*: How does TCP handle flow control?**
 
