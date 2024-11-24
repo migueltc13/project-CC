@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 
 # TODO remove json import
 import json
@@ -15,15 +16,30 @@ from protocol.exceptions.checksum_mismatch import ChecksumMismatchException
 
 
 class UDP(threading.Thread):
-    def __init__(self, server_ip):
+    def __init__(self, agent_id, server_ip, pool):
         super().__init__(daemon=True)
+        self.agent_id = agent_id
         self.server_ip = server_ip
         self.server_port = C.UDP_PORT
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.client_socket.settimeout(1.0)
         self.shutdown_flag = threading.Event()
         self.net_task = NetTask()
+        self.pool = pool
+        self.lock = threading.Lock()
         self.threads = []
+
+    def retransmit_packets(self):
+        while not self.shutdown_flag.is_set():
+            # Sleep for a while before retransmitting the packets
+            time.sleep(C.RETRANSMIT_SLEEP_TIME)
+            if self.shutdown_flag.is_set():
+                break
+
+            # Get the packets to retransmit and retransmit them
+            packets = self.pool.get_packets_to_ack()
+            for packet in packets:
+                self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
 
     def run(self):
         while not self.shutdown_flag.is_set():
@@ -49,7 +65,7 @@ class UDP(threading.Thread):
         # If any of the exceptions Invalid Header or Checksum Mismatch are raised, the
         # packet is discarded. By not sending an ACK, the server will resend the packet.
         except InvalidVersionException as e:
-            # This exception doesn't need to interrupt the server. We can just
+            # This exception doesn't need to interrupt the agent. We can just
             # print a message and try to process the packet anyway.
             print(e)
         except (InvalidHeaderException, ChecksumMismatchException) as e:
@@ -59,18 +75,80 @@ class UDP(threading.Thread):
         # TODO remove this (debug only)
         print(f"Received packet: {json.dumps(packet, indent=2)}")
 
-    def send_first_connection(self, agent_id):
-        seq_number = 1  # TODO
+        # If the packet received is a ACK, process the previous packet sent
+        # as acknowledged and remove it from the list of packets to be "acked",
+        # for that specific agent. After that we interrupt this function.
+        if packet["flags"]["ack"] == 1:
+            self.pool.remove_packet_to_ack(packet["data"])
+            return
+
+        # TODO respond to window probes
+
+        # Packet reordering and defragmentation
+        # if the more_flags is set, add the packet to the list of packets to be reordered
+        # else reorder the packets and defragment the data and combine the packets into one
+        if packet["flags"]["more_fragments"] == 1:
+            self.pool.add_packet_to_reorder(packet)
+            return
+        else:
+            packet = self.pool.reorder_packets(packet)
+
+        # TODO flux control by checking the window size
+        # if the URG flag is set, send the packet immediately, regardless of the window size
+        # if the window size received is 0, send WINDOW_PROBE until the window size updates
+        if packet["flags"]["urgent"] == 1:
+            pass
+        elif self.pool.get_window_size() == 0:
+            # TODO send window probes until the window size updates
+            pass
+
+        # Based on the packet type:
+        # - Send task: process the task and start running it, sending metrics back to the server
+        # - EOC: end of connection, send a ACK, sleep for a while and shutdown the agent
+        match packet["msg_type"]:
+            case self.net_task.SEND_TASK:
+                # TODO add to the task queue/list/class
+                pass
+            case self.net_task.EOC:
+                # # TODO send ACK
+                # # Sleep for a while
+                # time.sleep(C.EOC_SLEEP_TIME)
+                # # Shutdown the agent
+                # self.shutdown_flag.set()
+                pass
+
+        # Send ACK
+        seq_number = self.pool.inc_seq_number()
+        print(f"Sending ACK for packet {packet['seq_number']} to server")  # TODO remove this
+        window_size = self.pool.get_window_size()
+        seq_number, ack_packet = self.net_task.build_ack_packet(packet, seq_number,
+                                                                self.agent_id, window_size)
+
+        # Increment the sequence number for the agent
+        # TODO check if the sequence number is correct between agent and server
+        self.pool.set_seq_number(seq_number)
+
+        with self.lock:
+            self.client_socket.sendto(ack_packet, (self.server_ip, C.UDP_PORT))
+
+    def send_first_connection(self):
+        seq_number = self.pool.get_seq_number()
         flags = {"urgent": 1}
         msg_type = self.net_task.FIRST_CONNECTION
-        window_size = 64  # TODO
+        window_size = self.pool.get_window_size()
         seq_number, packets = self.net_task.build_packet(self.net_task, "", seq_number, flags,
-                                                         msg_type, agent_id, window_size)
+                                                         msg_type, self.agent_id, window_size)
         print(f"Sending {len(packets)} packets for first connection")
+        # This loop will only run once, since the first connection packet is small (50 bytes)
         for packet in packets:
+            # send the packet to the server
             self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
-            # TODO remove this
+
+            # parse the packet to save it in the list of packets to be acknowledged
             tmp_packet = self.net_task.parse_packet(self.net_task, packet)
+            # add the packet to the list of packets to be acknowledged
+            self.pool.add_packet_to_ack(tmp_packet)
+            # TODO remove this
             print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
 
     def shutdown(self):

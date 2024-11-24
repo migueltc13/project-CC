@@ -25,17 +25,17 @@ def main():
 
     pool = ClientPool()
 
-    tcp_client = ClientTCP(server_ip)
-    udp_client = ClientUDP(server_ip)
+    tcp_client = ClientTCP(agent_id, server_ip)
+    udp_client = ClientUDP(agent_id, server_ip, pool)
 
     # Start listening for server responses (NetTask)
     udp_client.start()
 
     # First connection to the server
-    udp_client.send_first_connection(agent_id)
+    udp_client.send_first_connection()
 
     # Test alert (AlertFlow.CPU_USAGE = 0)
-    # tcp_client.send_alert(0, agent_id, "Test CPU usage Alert")
+    # tcp_client.send_alert(0, "Test CPU usage Alert")
 
     try:
         # Loop to keep the main thread running

@@ -11,7 +11,8 @@ from protocol.alert_flow import AlertFlow
 
 
 class TCP:
-    def __init__(self, server_ip):
+    def __init__(self, agent_id, server_ip):
+        self.agent_id = agent_id
         self.server_ip = server_ip
         self.server_port = C.TCP_PORT
         self.alert_flow = AlertFlow()
@@ -27,9 +28,10 @@ class TCP:
             print("Exiting...")
             sys.exit(1)
 
-    def send_alert(self, alert_type, agent_id, data):
+    def send_alert(self, alert_type, data):
         # Build the packet
-        packet = self.alert_flow.build_packet(self.alert_flow, alert_type, agent_id, data)
+        packet = self.alert_flow.build_packet(self.alert_flow, alert_type,
+                                              self.agent_id, data)
 
         # Connect to the server
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

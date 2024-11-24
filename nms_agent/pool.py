@@ -40,9 +40,12 @@ class Pool:
         with self.lock:
             self.packets_to_ack.append(packet)
 
-    def remove_packet_to_ack(self, packet):
+    # Remove the acknowledged packet by the sequence number
+    def remove_packet_to_ack(self, seq_number):
         with self.lock:
-            self.packets_to_ack.remove(packet)
+            self.packets_to_ack = [f_packet
+                                   for f_packet in self.packets_to_ack
+                                   if f_packet["seq_number"] != seq_number]
 
     def get_packets_to_ack(self):
         with self.lock:

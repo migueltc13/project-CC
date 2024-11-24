@@ -16,19 +16,12 @@ from protocol.exceptions.invalid_header    import InvalidHeaderException
 from protocol.exceptions.checksum_mismatch import ChecksumMismatchException
 
 
-# SO_NO_CHECK for disabling UDP checksum
-SO_NO_CHECK = 11
-
-# Time to sleep before retransmitting packets
-RETRANSMIT_SLEEP_TIME = 5  # seconds
-
-
 class UDP(threading.Thread):
-    def __init__(self, ui, pool, host='0.0.0.0', port=C.UDP_PORT):
+    def __init__(self, ui, pool, host='0.0.0.0'):
         super().__init__(daemon=True)
         self.ui = ui
         self.host = host
-        self.port = port
+        self.port = C.UDP_PORT
         self.server_hostname = ui.server_hostname
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.server_socket.settimeout(1.0)
@@ -41,7 +34,7 @@ class UDP(threading.Thread):
         # Start the UDP server
         try:
             # Disable checksum check for UDP (Linux only)
-            self.server_socket.setsockopt(socket.SOL_SOCKET, SO_NO_CHECK, 1)
+            self.server_socket.setsockopt(socket.SOL_SOCKET, C.SO_NO_CHECK, 1)
             self.server_socket.bind((self.host, self.port))
         except OSError:
             self.ui.display_error(f"UDP port {self.port} is already in use. Exiting.")
@@ -56,7 +49,7 @@ class UDP(threading.Thread):
     def retransmit_packets(self):
         while not self.shutdown_flag.is_set():
             # Sleep for a while before retransmitting the packets
-            time.sleep(RETRANSMIT_SLEEP_TIME)
+            time.sleep(C.RETRANSMIT_SLEEP_TIME)
             if self.shutdown_flag.is_set():
                 break
 
@@ -67,8 +60,6 @@ class UDP(threading.Thread):
             for agent in agents:
                 addr = agents[agent]
                 packets = self.pool.get_packets_to_ack(agent)
-                # if len(packets) != 0:
-                #     print(f"Retransmitting {len(packets)} packets to {agent}")
                 with self.lock:
                     for packet in packets:
                         self.server_socket.sendto(packet, addr)
@@ -103,13 +94,16 @@ class UDP(threading.Thread):
             self.ui.display_error(e)
             return
 
+        # TODO remove this (debug only)
+        print(f"Received packet: {json.dumps(packet, indent=2)}")
+
         agent_id = packet["identifier"]
 
         # If the packet received is a ACK, process the previous packet sent
         # as acknowledged and remove it from the list of packets to be "acked",
         # for that specific agent. After that we interrupt this function.
         if packet["flags"]["ack"] == 1:
-            self.pool.remove_packet_to_ack(agent_id, packet)
+            self.pool.remove_packet_to_ack(agent_id, packet["data"])
             return
 
         # TODO respond to window probes
@@ -132,9 +126,6 @@ class UDP(threading.Thread):
             # TODO send window probes until the window size updates
             pass
 
-        # TODO remove this (debug only)
-        print(f"Received packet: {json.dumps(packet, indent=2)}")
-
         # Based on the packet type:
         # - First connection: add the client to the clients pool
         # - Task Metric: save the metric, after parsing data (also save the agent hostname)
@@ -150,7 +141,7 @@ class UDP(threading.Thread):
 
         # Send ACK
         seq_number = self.pool.inc_seq_number(agent_id)
-        print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
+        print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")  # TODO remove this
         window_size = self.pool.get_window_size()
         seq_number, ack_packet = self.net_task.build_ack_packet(packet, seq_number,
                                                                 agent_id, window_size)
