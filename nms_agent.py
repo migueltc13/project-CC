@@ -15,9 +15,12 @@ from nms_agent import (
 def main():
     # Parse command line arguments
     arg_parser = argparse.ArgumentParser(description="Network Management System Agent")
-    arg_parser.add_argument("--server", "-s",
+    arg_parser.add_argument("-s", "--server",
                             help="Server IP",
                             default="0.0.0.0")
+    arg_parser.add_argument("-v", "--verbose",
+                            help="Enable verbose output",
+                            action="store_true")
     args = arg_parser.parse_args()
 
     server_ip = args.server
@@ -26,9 +29,8 @@ def main():
     pool = ClientPool()
 
     tcp_client = ClientTCP(agent_id, server_ip)
-    udp_client = ClientUDP(agent_id, server_ip, pool)
+    udp_client = ClientUDP(agent_id, server_ip, pool, verbose=args.verbose)
 
-    # Start listening for server responses (NetTask)
     udp_client.start()
 
     # First connection to the server
@@ -48,7 +50,8 @@ def main():
         udp_client.shutdown()
         tcp_client.shutdown()
         udp_client.join()
-        print("Active threads:", threading.enumerate())
+        if args.verbose:
+            print("Active threads:", threading.enumerate())
 
     sys.exit(0)
 

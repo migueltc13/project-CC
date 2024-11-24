@@ -1,8 +1,6 @@
 import socket
 import threading
 import time
-
-# TODO remove json import
 import json
 
 import constants as C
@@ -16,7 +14,7 @@ from protocol.exceptions.checksum_mismatch import ChecksumMismatchException
 
 
 class UDP(threading.Thread):
-    def __init__(self, agent_id, server_ip, pool):
+    def __init__(self, agent_id, server_ip, pool, verbose=False):
         super().__init__(daemon=True)
         self.agent_id = agent_id
         self.server_ip = server_ip
@@ -28,6 +26,7 @@ class UDP(threading.Thread):
         self.pool = pool
         self.lock = threading.Lock()
         self.threads = []
+        self.verbose = verbose
 
     def retransmit_packets(self):
         while not self.shutdown_flag.is_set():
@@ -55,10 +54,9 @@ class UDP(threading.Thread):
                 handle_packet_thread.start()
             except socket.timeout:
                 continue
-            except OSError:  # TODO check this exception
+            except OSError:
                 break
 
-    # TODO
     def handle_packet(self, raw_data):
         try:
             packet = self.net_task.parse_packet(self.net_task, raw_data)
@@ -72,8 +70,8 @@ class UDP(threading.Thread):
             print(e)
             return
 
-        # TODO remove this (debug only)
-        print(f"Received packet: {json.dumps(packet, indent=2)}")
+        if self.verbose:
+            print(f"Received packet: {json.dumps(packet, indent=2)}")
 
         # If the packet received is a ACK, process the previous packet sent
         # as acknowledged and remove it from the list of packets to be "acked",
@@ -119,7 +117,8 @@ class UDP(threading.Thread):
 
         # Send ACK
         seq_number = self.pool.inc_seq_number()
-        print(f"Sending ACK for packet {packet['seq_number']} to server")  # TODO remove this
+        if self.verbose:
+            print(f"Sending ACK for packet {packet['seq_number']} to server")
         window_size = self.pool.get_window_size()
         seq_number, ack_packet = self.net_task.build_ack_packet(packet, seq_number,
                                                                 self.agent_id, window_size)
@@ -138,7 +137,7 @@ class UDP(threading.Thread):
         window_size = self.pool.get_window_size()
         seq_number, packets = self.net_task.build_packet(self.net_task, "", seq_number, flags,
                                                          msg_type, self.agent_id, window_size)
-        print(f"Sending {len(packets)} packets for first connection")
+
         # This loop will only run once, since the first connection packet is small (50 bytes)
         for packet in packets:
             # send the packet to the server
@@ -148,8 +147,9 @@ class UDP(threading.Thread):
             tmp_packet = self.net_task.parse_packet(self.net_task, packet)
             # add the packet to the list of packets to be acknowledged
             self.pool.add_packet_to_ack(tmp_packet)
-            # TODO remove this
-            print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
+
+            if self.verbose:
+                print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
 
     def shutdown(self):
         # Signal all threads to stop
