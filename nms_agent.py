@@ -39,7 +39,7 @@ def main():
     except KeyboardInterrupt:
         print("Agent interrupted. Shutting down...")
     finally:
-        print("TODO send EOC to server")  # TODO
+        # TODO send EOC to the server
         udp_client.shutdown()
         tcp_client.shutdown()
         udp_client.join()

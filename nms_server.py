@@ -42,8 +42,7 @@ def main():
     except (KeyboardInterrupt, EOFError):
         ui.display_info("Server interrupted. Shutting down...")
     finally:
-        print("TODO send EOC to connected agents")  # TODO
-        # send EOC to all connected agents
+        # TODO send EOC to all connected agents
         # while the packets to ack are not empty, keep waiting for the acks
         tcp_server.shutdown()
         udp_server.shutdown()
