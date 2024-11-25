@@ -78,6 +78,8 @@ class Pool:
         with self.lock:
             packets = self.packets_to_reorder
 
+            # TODO handle duplicate packets
+
             # filter only packets with the same message id
             packets = [f_packet for f_packet in packets
                        if f_packet["msg_id"] == packet["msg_id"]]
