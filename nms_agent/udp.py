@@ -28,6 +28,11 @@ class UDP(threading.Thread):
         self.threads = []
         self.verbose = verbose
 
+        # Initialize the retransmit thread
+        ret_thread = threading.Thread(target=self.retransmit_packets)
+        self.threads.append(ret_thread)
+        ret_thread.start()
+
     def retransmit_packets(self):
         while not self.shutdown_flag.is_set():
             # Sleep for a while before retransmitting the packets
@@ -37,8 +42,22 @@ class UDP(threading.Thread):
 
             # Get the packets to retransmit and retransmit them
             packets = self.pool.get_packets_to_ack()
-            for packet in packets:
-                self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
+            with self.lock:
+                for packet in packets:
+                    # buld the packet to be retransmitted
+                    seq_number = self.pool.get_seq_number()
+                    window_size = self.pool.get_window_size()
+                    final_seq_number, ret_packets = self.net_task.build_packet(
+                        self.net_task, packet["data"],
+                        seq_number, packet["flags"],
+                        packet["msg_type"], self.agent_id,
+                        window_size)
+
+                    for ret_packet in ret_packets:
+                        self.client_socket.sendto(ret_packet, (self.server_ip, C.UDP_PORT))
+
+                    # set the sequence number
+                    self.pool.set_seq_number(final_seq_number)
 
     def run(self):
         while not self.shutdown_flag.is_set():
@@ -139,8 +158,9 @@ class UDP(threading.Thread):
 
         # This loop will only run once, since the first connection packet is small (50 bytes)
         for packet in packets:
-            # send the packet to the server
-            self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
+            with self.lock:
+                # send the packet to the server
+                self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
 
             # parse the packet to save it in the list of packets to be acknowledged
             tmp_packet = self.net_task.parse_packet(self.net_task, packet)
@@ -161,7 +181,8 @@ class UDP(threading.Thread):
                                                          msg_type, self.agent_id, window_size)
 
         for packet in packets:
-            self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
+            with self.lock:
+                self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
 
             # parse the packet to save it in the list of packets to be acknowledged
             tmp_packet = self.net_task.parse_packet(self.net_task, packet)

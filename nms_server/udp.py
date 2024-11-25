@@ -61,7 +61,20 @@ class UDP(threading.Thread):
                 packets = self.pool.get_packets_to_ack(agent)
                 with self.lock:
                     for packet in packets:
-                        self.server_socket.sendto(packet, addr)
+                        # buld the packet to be retransmitted
+                        seq_number = self.pool.get_seq_number(agent)
+                        window_size = self.pool.get_window_size()
+                        final_seq_number, ret_packets = self.net_task.build_packet(
+                            self.net_task, packet["data"],
+                            seq_number, packet["flags"],
+                            packet["msg_type"], agent,
+                            window_size)
+
+                        for ret_packet in ret_packets:
+                            self.server_socket.sendto(ret_packet, addr)
+
+                        # set the sequence number for the agent
+                        self.pool.set_seq_number(agent, final_seq_number)
 
     def run(self):
         while not self.shutdown_flag.is_set():
