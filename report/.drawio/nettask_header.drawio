@@ -1,14 +1,11 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0" version="24.8.6">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0" version="24.8.9">
   <diagram name="Página-1" id="S1LxqCSoiejlppb5GJc7">
-    <mxGraphModel dx="880" dy="519" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="880" dy="471" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="ZJHZbfnKI5M3YyzbJauu-1" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="80" y="80" width="640" height="320" as="geometry" />
-        </mxCell>
-        <mxCell id="ZJHZbfnKI5M3YyzbJauu-20" value="&lt;b&gt;Packet Size&lt;br&gt;(4 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
-          <mxGeometry x="80" y="80" width="640" height="40" as="geometry" />
+          <mxGeometry x="80" y="120" width="640" height="280" as="geometry" />
         </mxCell>
         <mxCell id="ZJHZbfnKI5M3YyzbJauu-21" value="&lt;b&gt;NMS NetTask Version&lt;br&gt;(1 byte)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
           <mxGeometry x="80" y="120" width="160" height="40" as="geometry" />
@@ -49,10 +46,10 @@
         <mxCell id="ZJHZbfnKI5M3YyzbJauu-39" value="" style="labelPosition=right;align=left;strokeWidth=1;shape=mxgraph.mockup.markup.curlyBrace;html=1;shadow=0;dashed=0;strokeColor=#000000;direction=north;" parent="1" vertex="1">
           <mxGeometry x="472" y="450" width="20" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="dHq7F1R3947pLLU_Wdcz-1" value="&lt;b&gt;Message ID&lt;br&gt;(2 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" vertex="1" parent="1">
+        <mxCell id="dHq7F1R3947pLLU_Wdcz-1" value="&lt;b&gt;Message ID&lt;br&gt;(2 bytes)&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeColor=default;" parent="1" vertex="1">
           <mxGeometry x="80" y="240" width="320" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="dHq7F1R3947pLLU_Wdcz-2" value="" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=#BABABA;strokeColor=#36393d;" vertex="1" parent="1">
+        <mxCell id="dHq7F1R3947pLLU_Wdcz-2" value="" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=#BABABA;strokeColor=#36393d;" parent="1" vertex="1">
           <mxGeometry x="400" y="240" width="320" height="40" as="geometry" />
         </mxCell>
       </root>
