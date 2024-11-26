@@ -38,8 +38,6 @@ class Pool:
 
     def add_packet_to_ack(self, packet):
         with self.lock:
-            # Set the retransmission flag
-            packet["flags"]["retransmission"] = 1
             self.packets_to_ack.append(packet)
 
     # Remove the acknowledged packet by the sequence number

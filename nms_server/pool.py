@@ -64,8 +64,6 @@ class Pool:
 
     def add_packet_to_ack(self, client, packet):
         with self.lock:
-            # Set the retransmission flag
-            packet["flags"]["retransmission"] = 1
             self.packets_to_ack[client].append(packet)
 
     def remove_packet_to_ack(self, client, seq_number):
