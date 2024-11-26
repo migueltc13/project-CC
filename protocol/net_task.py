@@ -8,7 +8,6 @@ from .exceptions.invalid_header    import InvalidHeaderException
 from .exceptions.checksum_mismatch import ChecksumMismatchException
 
 # NetTask Header:
-# - Packet Size     ( 4 bytes)
 # - NetTask version ( 1 byte)
 # - Sequence number ( 2 bytes)
 # - Flags and Type  ( 1 byte)
@@ -35,8 +34,8 @@ from .exceptions.checksum_mismatch import ChecksumMismatchException
 # Integers like sequence number, fragment offset, window size, and ACK seq. number
 # are stored in network byte order (big-endian) unsigned integers.
 
-# If the flag ACK is set, the payload data will contain 4 bytes
-# with the sequence number of the message being acknowledged.
+# If the flag ACK is set, the payload data will be empty, and the sequence number
+# represents the sequence number of the packet being acknowledged.
 
 
 ###
@@ -44,7 +43,6 @@ from .exceptions.checksum_mismatch import ChecksumMismatchException
 ###
 
 # Constants for header field sizes
-SIZE_PACKET_SIZE = 4
 SIZE_NMS_VERSION = 1
 SIZE_SEQ_NUMBER  = 2
 SIZE_FLAGS_TYPE  = 1
@@ -55,9 +53,9 @@ SIZE_MSG_ID      = 2
 SIZE_IDENTIFIER  = 32
 
 # Header total size
-HEADER_SIZE = (SIZE_PACKET_SIZE + SIZE_NMS_VERSION + SIZE_SEQ_NUMBER +
-               SIZE_FLAGS_TYPE + SIZE_FRAGMENT + SIZE_WINDOW_SIZE +
-               SIZE_CHECKSUM + SIZE_MSG_ID + SIZE_IDENTIFIER)
+HEADER_SIZE = (SIZE_NMS_VERSION + SIZE_SEQ_NUMBER + SIZE_FLAGS_TYPE +
+               SIZE_FRAGMENT + SIZE_WINDOW_SIZE + SIZE_CHECKSUM +
+               SIZE_MSG_ID + SIZE_IDENTIFIER)
 
 # Struct format for the header fields
 # !    network (big-endian) byte order
@@ -65,7 +63,7 @@ HEADER_SIZE = (SIZE_PACKET_SIZE + SIZE_NMS_VERSION + SIZE_SEQ_NUMBER +
 # H    unsigned short      (2 bytes)
 # I    unsigned int        (4 bytes)
 # Xs   string with X chars (X bytes)
-STRUCT_FORMAT = '!I B H B I H H H 32s'
+STRUCT_FORMAT = '!B H B I H H H 32s'
 
 
 ###
@@ -82,8 +80,8 @@ class NetTask:
     # Calculate the checksum of a packet, padding the checksum field with 0
     @staticmethod
     def calculate_checksum(packet):
-        checksum_start = (SIZE_PACKET_SIZE + SIZE_NMS_VERSION + SIZE_SEQ_NUMBER +
-                          SIZE_FLAGS_TYPE + SIZE_FRAGMENT + SIZE_WINDOW_SIZE)
+        checksum_start = (SIZE_NMS_VERSION + SIZE_SEQ_NUMBER + SIZE_FLAGS_TYPE +
+                          SIZE_FRAGMENT + SIZE_WINDOW_SIZE)
         checksum_end = checksum_start + SIZE_CHECKSUM
         data = packet[:checksum_start] + packet[checksum_end:]
 
@@ -113,12 +111,12 @@ class NetTask:
         # Unpack the header fields
         try:
             # Check if the NMS NetTask version is correct before unpacking the rest of the header
-            version = header[SIZE_PACKET_SIZE:SIZE_PACKET_SIZE + SIZE_NMS_VERSION]
+            version = header[:SIZE_NMS_VERSION]
             version = int.from_bytes(version, byteorder='big')
             if version != C.NET_TASK_VERSION:
                 raise InvalidVersionException(version, C.NET_TASK_VERSION)
 
-            packet_size, version, seq_number, flags_type, fragment_offset, \
+            version, seq_number, flags_type, fragment_offset, \
                 window_size, checksum, msg_id, identifier = struct.unpack(STRUCT_FORMAT, header)
 
         except Exception:
@@ -141,7 +139,6 @@ class NetTask:
         identifier = identifier.rstrip(b'\x00')
 
         return {
-            "packet_size": packet_size,
             "version": version,
             "seq_number": seq_number,
             "flags": {
@@ -157,25 +154,16 @@ class NetTask:
             "checksum": checksum,
             "msg_id": msg_id,
             "identifier": identifier.decode(C.ENCODING),
-            # If the packet is an ACK, the data field will contain the
-            # sequence number of the message being acknowledged
-            "data": (data.decode(C.ENCODING)
-                     if ack_flag == 0
-                     else int.from_bytes(data, byteorder='big'))
+            "data": data.decode(C.ENCODING)
         }
 
     @staticmethod
     def build_header(self, seq_number, flags_type, fragment_offset,
-                     window_size, msg_id, identifier, data, is_ack=False):
-
-        packet_size = (HEADER_SIZE + len(data)
-                       if not is_ack
-                       else HEADER_SIZE + SIZE_SEQ_NUMBER)
+                     window_size, msg_id, identifier, data):
 
         # Initial header with checksum set to 0
         header = struct.pack(
             STRUCT_FORMAT,
-            packet_size,
             C.NET_TASK_VERSION,
             seq_number,
             flags_type,
@@ -187,18 +175,14 @@ class NetTask:
         )
 
         # Concatenate header and data to calculate the checksum
-        if not is_ack:
-            if isinstance(data, str):
-                data = data.encode(C.ENCODING)
-        else:
-            data = data.to_bytes(2, byteorder='big')
+        if isinstance(data, str):
+            data = data.encode(C.ENCODING)
         packet = header + data
         checksum = self.calculate_checksum(packet)
 
         # Repack the header with the actual checksum
         header = struct.pack(
             STRUCT_FORMAT,
-            packet_size,
             C.NET_TASK_VERSION,
             seq_number,
             flags_type,
@@ -242,6 +226,16 @@ class NetTask:
             # Set the "more_fragments" flag
             flags["more_fragments"] = 1 if i < len(data_segments) - 1 else 0
 
+            # Rebuild the flags and type field
+            flags_type = (
+                (flags.get("ack",            0) << 7) |
+                (flags.get("retransmission", 0) << 6) |
+                (flags.get("urgent",         0) << 5) |
+                (flags.get("window_probe",   0) << 4) |
+                (flags.get("more_fragments", 0) << 3) |
+                (msg_type & 0b00000111)
+            )
+
             # Build the header
             header = self.build_header(self,
                                        seq_number,
@@ -261,15 +255,15 @@ class NetTask:
 
         return seq_number, packets
 
-    def build_ack_packet(self, packet, seq_number, identifier, window_size):
+    def build_ack_packet(self, packet, identifier, window_size):
         # Set the appropriate flags for the ACK packet combine the remaining
         # flags and type of the packet being acknowledged
         flags_type = (
-            (1 << 7) |  # ACK flag
-            (0 << 6) |  # No retransmission
+            (1 << 7) |  # set ACK flag
+            (0 << 6) |  # unset retransmission flag
             (packet['flags'].get("urgent", 0) << 5) |
-            (0 << 4) |  # No window probe
-            (0 << 3) |  # No more fragments
+            (0 << 4) |  # unset window probe flag
+            (0 << 3) |  # unset more fragments flag
             (packet["msg_type"] & 0b00000111)
         )
 
@@ -277,13 +271,12 @@ class NetTask:
 
         # Build the header
         header = self.build_header(self,
-                                   seq_number,
+                                   ack_number,
                                    flags_type,
                                    0,           # No fragment offset
                                    window_size,
-                                   seq_number,  # Message ID: seq nr of the packet to acknowledge
+                                   packet["msg_id"],
                                    identifier,
-                                   ack_number,  # Data: seq nr of the packet to acknowledge
-                                   is_ack=True)
+                                   "")
 
-        return seq_number + 1, header + ack_number.to_bytes(2, byteorder='big')
+        return header

@@ -40,13 +40,17 @@ def main():
     # First connection to the server
     udp_client.send_first_connection()
 
+    # Test metric
+    time.sleep(5)
+    udp_client.send_metric(None)
+
     # Test alert (AlertFlow.CPU_USAGE = 0)
     # tcp_client.send_alert(0, "Test CPU usage Alert")
 
     try:
         # Loop to keep the main thread running
         while udp_client.shutdown_flag.is_set() is False:
-            time.sleep(0.1)
+            time.sleep(1)
     except KeyboardInterrupt:
         print("Agent interrupted. Shutting down...")
     finally:
@@ -60,7 +64,7 @@ def main():
                 print(f"Nr of packs to be acknowledged: {pool.get_nr_packets_to_ack()}")
                 print(f"Packet(s) to be acknowledged: {pool.packets_to_ack}")
                 print(f"Time elapsed: {time.time() - start_time}")
-            time.sleep(0.1)
+            time.sleep(1)
 
         # Shutdown the clients and await until the threads finish
         udp_client.shutdown()

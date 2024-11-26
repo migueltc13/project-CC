@@ -102,27 +102,37 @@ class Pool:
         with self.lock:
             packets = self.packets_to_reorder[client]
 
-            # TODO handle duplicate packets
-
             # filter only packets with the same message id
-            packets = [f_packet for f_packet in packets
-                       if f_packet["msg_id"] == packet["msg_id"]]
+            packets = [
+                f_packet for f_packet in packets
+                if f_packet["msg_id"] == packet["msg_id"]
+            ]
+
+            # save the packets to remove from the list of packets to reorder
+            buffered_packets = packets.copy()
+
+            # remove dupplicate packets by the sequence number
+            unique_packets = {}
+            for p in packets:
+                if p["seq_number"] not in unique_packets:
+                    unique_packets[p["seq_number"]] = p
 
             # reorder packets by sequence number
-            packets.sort(key=lambda x: x["seq_number"])
+            packets = sorted(unique_packets.values(), key=lambda x: x["seq_number"])
 
             # defragment data by concatenating the data of all packets
             packet = packets[0]
             for i in range(1, len(packets)):
                 packet["data"] += packets[i]["data"]
 
-            # update the window size
-            self.window_size += len(packets)
-
             # remove the defragmented packets from the list of packets to reorder
-            self.packets_to_reorder[client] = [f_packet
-                                               for f_packet in self.packets_to_reorder[client]
-                                               if f_packet not in packets]
+            self.packets_to_reorder[client] = [
+                f_packet for f_packet in self.packets_to_reorder[client]
+                if f_packet not in buffered_packets
+            ]
+
+            # update the window size
+            self.window_size += len(buffered_packets)
 
             return packet  # packet with defragmented data
 

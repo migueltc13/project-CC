@@ -63,7 +63,7 @@ def main():
             if args.verbose:
                 print(f"Nr of packs to be acknowledged: {pool.get_nr_packets_to_ack()}")
                 print(f"Time elapsed: {time.time() - start_time}")
-            time.sleep(0.1)
+            time.sleep(1)
 
         # Shutdown the servers and await until the threads finish
         tcp_server.shutdown()

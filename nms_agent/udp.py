@@ -33,6 +33,7 @@ class UDP(threading.Thread):
         self.threads.append(ret_thread)
         ret_thread.start()
 
+    # NOTE retransmission of packets does not increment the sequence number
     def retransmit_packets(self):
         while not self.shutdown_flag.is_set():
             # Sleep for a while before retransmitting the packets
@@ -47,7 +48,7 @@ class UDP(threading.Thread):
                     # buld the packet to be retransmitted
                     seq_number = self.pool.get_seq_number()
                     window_size = self.pool.get_window_size()
-                    final_seq_number, ret_packets = self.net_task.build_packet(
+                    _, ret_packets = self.net_task.build_packet(
                         self.net_task, packet["data"],
                         seq_number, packet["flags"],
                         packet["msg_type"], self.agent_id,
@@ -55,9 +56,6 @@ class UDP(threading.Thread):
 
                     for ret_packet in ret_packets:
                         self.client_socket.sendto(ret_packet, (self.server_ip, C.UDP_PORT))
-
-                    # set the sequence number
-                    self.pool.set_seq_number(final_seq_number)
 
     def run(self):
         while not self.shutdown_flag.is_set():
@@ -96,8 +94,20 @@ class UDP(threading.Thread):
         # as acknowledged and remove it from the list of packets to be "acked",
         # for that specific agent. After that we interrupt this function.
         if packet["flags"]["ack"] == 1:
-            self.pool.remove_packet_to_ack(packet["data"])
+            self.pool.remove_packet_to_ack(packet["seq_number"])
             return
+
+        # whenever the agent receives a packet, increase the sequence number,
+        # unless the packet is a ack or retransmission
+        if packet["flags"]["retransmission"] == 0:
+            self.pool.inc_seq_number()
+
+        # send ACK
+        window_size = self.pool.get_window_size()
+        ack_packet = self.net_task.build_ack_packet(packet, self.agent_id, window_size)
+
+        with self.lock:
+            self.client_socket.sendto(ack_packet, (self.server_ip, C.UDP_PORT))
 
         # TODO respond to window probes
 
@@ -130,21 +140,6 @@ class UDP(threading.Thread):
             case self.net_task.EOC:
                 eoc_received = True
 
-        # Send ACK
-        seq_number = self.pool.inc_seq_number()
-        if self.verbose:
-            print(f"Sending ACK for packet {packet['seq_number']} to server")
-        window_size = self.pool.get_window_size()
-        seq_number, ack_packet = self.net_task.build_ack_packet(packet, seq_number,
-                                                                self.agent_id, window_size)
-
-        # Increment the sequence number for the agent
-        # TODO check if the sequence number is correct between agent and server
-        self.pool.set_seq_number(seq_number)
-
-        with self.lock:
-            self.client_socket.sendto(ack_packet, (self.server_ip, C.UDP_PORT))
-
         if eoc_received:
             self.shutdown_flag.set()
 
@@ -155,6 +150,9 @@ class UDP(threading.Thread):
         window_size = self.pool.get_window_size()
         seq_number, packets = self.net_task.build_packet(self.net_task, "", seq_number, flags,
                                                          msg_type, self.agent_id, window_size)
+
+        # Set the sequence number
+        self.pool.set_seq_number(seq_number)
 
         # This loop will only run once, since the first connection packet is small (50 bytes)
         for packet in packets:
@@ -170,7 +168,29 @@ class UDP(threading.Thread):
             if self.verbose:
                 print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
 
-    # TODO: def send_metric(self, metric):
+    def send_metric(self, metric):
+        metric = "A" * 1449 + "B" + "C" * 1449 + "D"  # TODO remove this to use the real metric
+        seq_number = self.pool.get_seq_number()
+        flags = {}
+        msg_type = self.net_task.SEND_METRICS
+        window_size = self.pool.get_window_size()
+        seq_number, packets = self.net_task.build_packet(self.net_task, metric, seq_number, flags,
+                                                         msg_type, self.agent_id, window_size)
+
+        # Set the sequence number
+        self.pool.set_seq_number(seq_number)
+
+        for packet in packets:
+            with self.lock:
+                self.client_socket.sendto(packet, (self.server_ip, C.UDP_PORT))
+
+            # parse the packet to save it in the list of packets to be acknowledged
+            tmp_packet = self.net_task.parse_packet(self.net_task, packet)
+            # add the packet to the list of packets to be acknowledged
+            self.pool.add_packet_to_ack(tmp_packet)
+
+            if self.verbose:
+                print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
 
     def send_end_of_connection(self):
         seq_number = self.pool.get_seq_number()
@@ -179,6 +199,9 @@ class UDP(threading.Thread):
         window_size = self.pool.get_window_size()
         seq_number, packets = self.net_task.build_packet(self.net_task, "", seq_number, flags,
                                                          msg_type, self.agent_id, window_size)
+
+        # Set the sequence number
+        self.pool.set_seq_number(seq_number)
 
         for packet in packets:
             with self.lock:
