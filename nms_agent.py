@@ -42,7 +42,7 @@ def main():
 
     # Test metric
     time.sleep(5)
-    udp_client.send_metric(None)
+    udp_client.send_metrics(None)
 
     # Test alert (AlertFlow.CPU_USAGE = 0)
     # tcp_client.send_alert(0, "Test CPU usage Alert")
