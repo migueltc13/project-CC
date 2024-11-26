@@ -64,7 +64,8 @@ class Pool:
 
     def add_packet_to_ack(self, client, packet):
         with self.lock:
-            self.packets_to_ack[client].append(packet)
+            copy_packet = packet.copy()
+            self.packets_to_ack[client].append(copy_packet)
 
     def remove_packet_to_ack(self, client, seq_number):
         with self.lock:
@@ -88,7 +89,8 @@ class Pool:
 
     def add_packet_to_reorder(self, client, packet):
         with self.lock:
-            self.packets_to_reorder[client].append(packet)
+            copy_packet = packet.copy()
+            self.packets_to_reorder[client].append(copy_packet)
             self.window_size -= 1
 
     def reorder_packets(self, client, packet):

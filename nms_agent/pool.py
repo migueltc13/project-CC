@@ -38,7 +38,8 @@ class Pool:
 
     def add_packet_to_ack(self, packet):
         with self.lock:
-            self.packets_to_ack.append(packet)
+            copy_packet = packet.copy()
+            self.packets_to_ack.append(copy_packet)
 
     # Remove the acknowledged packet by the sequence number
     def remove_packet_to_ack(self, seq_number):
@@ -62,7 +63,8 @@ class Pool:
 
     def add_packet_to_reorder(self, packet):
         with self.lock:
-            self.packets_to_reorder.append(packet)
+            copy_packet = packet.copy()
+            self.packets_to_reorder.append(copy_packet)
             self.window_size -= 1
 
     def reorder_packets(self, packet):
