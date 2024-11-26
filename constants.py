@@ -17,10 +17,13 @@ SO_NO_CHECK = 11
 
 # Initial window size for flow control,
 # as the space available in the server/agent buffer
-INITIAL_WINDOW_SIZE = 64
+INITIAL_WINDOW_SIZE = 32  # packets
 
 # Time to sleep before retransmitting packets
 RETRANSMIT_SLEEP_TIME = 5  # seconds
+
+# Time to sleep before probing the window size
+WINDOW_PROBE_SLEEP_TIME = 10  # seconds
 
 # Timout for end of connection acknowledgments
 EOC_ACK_TIMEOUT = 10  # seconds

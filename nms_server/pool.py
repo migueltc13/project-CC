@@ -14,7 +14,8 @@ class Pool:
         self.seq_numbers = dict()
         self.packets_to_ack = dict()
         self.packets_to_reorder = dict()
-        self.window_size = INITIAL_WINDOW_SIZE
+        self.agents_window_sizes = dict()
+        self.server_window_size = INITIAL_WINDOW_SIZE
         self.lock = threading.Lock()
 
     ###
@@ -27,6 +28,7 @@ class Pool:
             self.seq_numbers[client] = 1
             self.packets_to_ack[client] = []
             self.packets_to_reorder[client] = []
+            self.agents_window_sizes[client] = INITIAL_WINDOW_SIZE
 
     def remove_client(self, client):
         with self.lock:
@@ -36,6 +38,7 @@ class Pool:
             del self.seq_numbers[client]
             del self.packets_to_ack[client]
             del self.packets_to_reorder[client]
+            del self.agents_window_sizes
 
     def get_connected_clients(self):
         with self.lock:
@@ -84,14 +87,14 @@ class Pool:
 
     ###
     # Packets received to be reordered and defragmented
-    # Window size
+    # Server window size
     ###
 
     def add_packet_to_reorder(self, client, packet):
         with self.lock:
             copy_packet = packet.copy()
             self.packets_to_reorder[client].append(copy_packet)
-            self.window_size -= 1
+            self.server_window_size -= 1
 
     def reorder_packets(self, client, packet):
         try:
@@ -134,14 +137,32 @@ class Pool:
             ]
 
             # update the window size
-            self.window_size += len(buffered_packets)
+            self.server_window_size += len(buffered_packets)
 
             return packet  # packet with defragmented data
 
     ###
-    # Window size
+    # Server window size
     ###
 
-    def get_window_size(self):
+    def get_server_window_size(self):
         with self.lock:
-            return self.window_size
+            return self.server_window_size
+
+    ###
+    # Agents window sizes
+    ###
+
+    def get_client_window_size(self, client):
+        with self.lock:
+            try:
+                return self.agents_window_sizes[client]
+            except KeyError:
+                return 1
+
+    def set_client_window_size(self, client, window_size):
+        with self.lock:
+            try:
+                self.agents_window_sizes[client] = window_size
+            except KeyError:
+                pass

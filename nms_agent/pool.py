@@ -12,7 +12,8 @@ class Pool:
         self.seq_number = 1
         self.packets_to_ack = []
         self.packets_to_reorder = []
-        self.window_size = INITIAL_WINDOW_SIZE
+        self.agent_window_size = INITIAL_WINDOW_SIZE
+        self.server_window_size = INITIAL_WINDOW_SIZE
         self.lock = threading.Lock()
 
     ###
@@ -65,7 +66,7 @@ class Pool:
         with self.lock:
             copy_packet = packet.copy()
             self.packets_to_reorder.append(copy_packet)
-            self.window_size -= 1
+            self.agent_window_size -= 1
 
     def reorder_packets(self, packet):
         try:
@@ -108,14 +109,26 @@ class Pool:
             ]
 
             # update the window size
-            self.window_size += len(buffered_packets)
+            self.agent_window_size += len(buffered_packets)
 
             return packet  # packet with defragmented data
 
     ###
-    # Window size
+    # Agent window size
     ###
 
-    def get_window_size(self):
+    def get_agent_window_size(self):
         with self.lock:
-            return self.window_size
+            return self.agent_window_size
+
+    ###
+    # Server window size
+    ###
+
+    def get_server_window_size(self):
+        with self.lock:
+            return self.server_window_size
+
+    def set_server_window_size(self, window_size):
+        with self.lock:
+            self.server_window_size = window_size

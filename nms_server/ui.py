@@ -76,6 +76,7 @@ class UI:
                             print(f"Sequence Number: {self.pool.get_seq_number(agent)}")
                             print(f"Packets to Ack: {self.pool.packets_to_ack[agent]}")
                             print(f"Packets to Reorder: {self.pool.packets_to_reorder[agent]}")
+                            print(f"Window Size: {self.pool.agents_window_sizes[agent]}")
             case 4:
                 self.display_info("Shutting down server...")
                 self.running = False

@@ -40,10 +40,15 @@ class UDP(threading.Thread):
             sys.exit(1)
         self.ui.save_status(f"UDP Server started on port {self.port}")
 
-        # Retransmit packets to be acknowledged
+        # Initialize the retransmit thread
         ret_thread = threading.Thread(target=self.retransmit_packets)
         self.threads.append(ret_thread)
         ret_thread.start()
+
+        # Initialize the window size control thread
+        win_thread = threading.Thread(target=self.window_size_control)
+        self.threads.append(win_thread)
+        win_thread.start()
 
     # NOTE retransmission of packets does not increment the sequence number
     def retransmit_packets(self):
@@ -57,27 +62,52 @@ class UDP(threading.Thread):
             agents = self.pool.get_connected_clients()
 
             # For each agent, get the packets to retransmit and retransmit them
-            for agent in agents:
-                addr = agents[agent]
-                packets = self.pool.get_packets_to_ack(agent)
-                with self.lock:
-                    for packet in packets:
-                        # build the packet to be retransmitted and set the retransmission flag
-                        seq_number = self.pool.get_seq_number(agent)
-                        window_size = self.pool.get_window_size()
-                        flags = packet["flags"]
-                        flags["retransmission"] = 1
-                        _, ret_packets = self.net_task.build_packet(
-                            self.net_task, packet["data"],
-                            seq_number, flags,
-                            packet["msg_type"], agent,
-                            window_size)
+            for agent_id in agents:
+                addr = agents[agent_id]
+                packets = self.pool.get_packets_to_ack(agent_id)
+                for packet in packets:
+                    # build the packet to be retransmitted and set the retransmission flag
+                    seq_number = self.pool.get_seq_number(agent_id)
+                    window_size = self.pool.get_server_window_size()
+                    flags = packet["flags"]
+                    flags["retransmission"] = 1
+                    _, ret_packets = self.net_task.build_packet(
+                        self.net_task, packet["data"],
+                        seq_number, flags,
+                        packet["msg_type"], agent_id,
+                        window_size)
 
-                        for ret_packet in ret_packets:
+                    for ret_packet in ret_packets:
+                        # wait if the server window size is 0
+                        while self.pool.get_client_window_size(agent_id) == 0:
+                            time.sleep(0.1)
+
+                        with self.lock:
                             self.server_socket.sendto(ret_packet, addr)
 
-                            if self.verbose and self.ui.view_mode:
-                                print(f"Retransmitting packet: {json.dumps(packet, indent=2)}")
+                        if self.verbose and self.ui.view_mode:
+                            print(f"Retransmitting packet: {json.dumps(packet, indent=2)}")
+
+    def window_size_control(self):
+        while not self.shutdown_flag.is_set():
+            # Sleep for a while before retransmitting the packets
+            time.sleep(C.WINDOW_PROBE_SLEEP_TIME)
+            if self.shutdown_flag.is_set():
+                break
+
+            # Get the connected agents and respective addresses
+            agents = self.pool.get_connected_clients()
+
+            # For each agent, if his window size is 0, send a window probe
+            for agent_id in agents:
+                addr = agents[agent_id]
+                window_size = self.pool.get_client_window_size(agent_id)
+                if window_size == 0:
+                    self.send("", {"urgent": 1, "window_probe": 1},
+                              self.net_task.UNDEFINED, agent_id, addr)
+
+                    if self.verbose and self.ui.view_mode:
+                        print(f"Sending window probe to {agent_id}")
 
     def run(self):
         while not self.shutdown_flag.is_set():
@@ -114,6 +144,9 @@ class UDP(threading.Thread):
 
         agent_id = packet["identifier"]
 
+        # Save the received agent window size
+        self.pool.set_client_window_size(agent_id, packet["window_size"])
+
         # If the packet received is a ACK, process the previous packet sent
         # as acknowledged and remove it from the list of packets to be "acked",
         # for that specific agent. After that we interrupt this function.
@@ -130,8 +163,18 @@ class UDP(threading.Thread):
         if packet["flags"]["retransmission"] == 0:
             self.pool.inc_seq_number(agent_id)
 
+        # Flux control by checking the window size
+        # if the URG flag is set, send the packet immediately, regardless of the window size
+        # if the window size received is 0, the window size control thread will send window probe
+        # packets to the agents with window size 0
+        if packet["flags"]["urgent"] == 0:
+            while self.pool.get_client_window_size(agent_id) == 0:
+                time.sleep(1)
+                if self.verbose and self.ui.view_mode:
+                    print(f"Agent {agent_id} window size is 0. Waiting...")
+
         # send ACK
-        window_size = self.pool.get_window_size()
+        window_size = self.pool.get_server_window_size()
         ack_packet = self.net_task.build_ack_packet(packet, agent_id, window_size)
 
         with self.lock:
@@ -149,21 +192,15 @@ class UDP(threading.Thread):
         else:
             packet = self.pool.reorder_packets(agent_id, packet)
 
-        # TODO flux control by checking the window size
-        # if the URG flag is set, send the packet immediately, regardless of the window size
-        # if the window size received is 0, send WINDOW_PROBE until the window size updates
-        if packet["flags"]["urgent"] == 1:
-            pass
-        elif self.pool.get_window_size() == 0:
-            # TODO send window probes until the window size updates
-            pass
-
         # Based on the packet type:
         # - First connection: add the client to the clients pool
         # - Task Metric: save the metric, after parsing data (also save the agent hostname)
         # - End of connection: remove the client from the clients pool
         eoc_received = False
         match packet["msg_type"]:
+            case self.net_task.FIRST_CONNECTION:
+                # Send tasks to the agent
+                pass
             case self.net_task.SEND_METRICS:
                 # self.ui.save_metric(agent_id, f"Metric data: {packet['data']}")
                 print("TODO save metric")  # TODO
@@ -176,7 +213,7 @@ class UDP(threading.Thread):
 
     def send(self, data, flags, msg_type, agent_id, addr):
         seq_number = self.pool.get_seq_number(agent_id)
-        window_size = self.pool.get_window_size()
+        window_size = self.pool.get_server_window_size()
         seq_number, packets = self.net_task.build_packet(self.net_task, data, seq_number, flags,
                                                          msg_type, agent_id, window_size)
 

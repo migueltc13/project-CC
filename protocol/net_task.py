@@ -72,6 +72,7 @@ STRUCT_FORMAT = '!B H B I H H H 32s'
 
 class NetTask:
     # Constants for message types
+    UNDEFINED        = 0
     FIRST_CONNECTION = 1
     SEND_TASK        = 2
     SEND_METRICS     = 3
