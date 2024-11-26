@@ -62,12 +62,14 @@ class UDP(threading.Thread):
                 packets = self.pool.get_packets_to_ack(agent)
                 with self.lock:
                     for packet in packets:
-                        # buld the packet to be retransmitted
+                        # build the packet to be retransmitted and set the retransmission flag
                         seq_number = self.pool.get_seq_number(agent)
                         window_size = self.pool.get_window_size()
+                        flags = packet["flags"]
+                        flags["retransmission"] = 1
                         _, ret_packets = self.net_task.build_packet(
                             self.net_task, packet["data"],
-                            seq_number, packet["flags"],
+                            seq_number, flags,
                             packet["msg_type"], agent,
                             window_size)
 
@@ -138,8 +140,6 @@ class UDP(threading.Thread):
         if self.verbose and self.ui.view_mode:
             print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
 
-        # TODO respond to window probes
-
         # Packet reordering and defragmentation
         # if the more_flags is set, add the packet to the list of packets to be reordered
         # else reorder the packets and defragment the data and combine the packets into one
@@ -174,35 +174,39 @@ class UDP(threading.Thread):
             self.pool.remove_client(agent_id)
             self.ui.save_status(f"Agent {agent_id} disconnected.")
 
+    def send(self, data, flags, msg_type, agent_id, addr):
+        seq_number = self.pool.get_seq_number(agent_id)
+        window_size = self.pool.get_window_size()
+        seq_number, packets = self.net_task.build_packet(self.net_task, data, seq_number, flags,
+                                                         msg_type, agent_id, window_size)
+
+        # set the sequence number
+        self.pool.set_seq_number(agent_id, seq_number)
+
+        for packet in packets:
+            with self.lock:
+                self.server_socket.sendto(packet, addr)
+
+            # parse the packet to save it in the list of packets to be acknowledged
+            tmp_packet = self.net_task.parse_packet(self.net_task, packet)
+            # add the packet to the list of packets to be acknowledged
+            self.pool.add_packet_to_ack(agent_id, tmp_packet)
+
+            if self.verbose and self.ui.view_mode:
+                print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
+
+    # def send_task(self, agent_id, task):  # TODO
+
     def send_end_of_connection(self):
         # Get the connected agents and respective addresses
         agents = self.pool.get_connected_clients()
 
         # For each agent, send the EOC packet
-        for agent in agents:
-            addr = agents[agent]
-            seq_number = self.pool.get_seq_number(agent)
-            flags = {"urgent": 1}
+        for agent_id in self.pool.get_connected_clients():
+            addr = agents[agent_id]
             msg_type = self.net_task.EOC
-            window_size = self.pool.get_window_size()
-            seq_number, eoc_packets = self.net_task.build_packet(self.net_task, "", seq_number,
-                                                                 flags, msg_type, agent,
-                                                                 window_size)
 
-            # Increment the sequence number for the agent
-            self.pool.set_seq_number(agent, seq_number)
-
-            for eoc_packet in eoc_packets:
-                with self.lock:
-                    self.server_socket.sendto(eoc_packet, addr)
-
-                # parse the packet to save it in the list of packets to be acknowledged
-                tmp_packet = self.net_task.parse_packet(self.net_task, eoc_packet)
-                # add the packet to the list of packets to be acknowledged
-                self.pool.add_packet_to_ack(agent, tmp_packet)
-
-                if self.verbose and self.ui.view_mode:
-                    print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
+            self.send("", {"urgent": 1}, msg_type, agent_id, addr)
 
     def shutdown(self):
         # Signal all threads to stop
