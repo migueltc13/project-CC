@@ -30,6 +30,8 @@ class Pool:
 
     def remove_client(self, client):
         with self.lock:
+            if client not in self.clients:
+                return
             del self.clients[client]
             del self.seq_numbers[client]
             del self.packets_to_ack[client]
