@@ -109,9 +109,30 @@
     \item Normal
 \end{itemize}
 
+\clearpage
+
 \section{\textit{NetTask}}
 
-\subsection{Formato de Mensagem}
+O protocolo \textit{NetTask} é essencial para a funcionalidade harmonizada do
+\textbf{\textit{Network Monitoring System}}, sendo este usado para a maioria
+das comunicações entre o servidor e os agentes, tais como, a primeira conexão de
+um agente ao servidor, o envio de tarefas pelo servidor, o envio de resultados
+de tarefas pelos agentes, e a terminação de conexões nos dois sentidos.
+
+Deste modo, o protocolo \textit{NetTask} foi desenvolvido para ser robusto e
+adaptável a condições adversas de rede, garantindo a entrega fiável e integral
+de mensagens, sobretudo em rotas deterioradas, com perdas ou duplicação de pacotes,
+latências elevadas e taxas de débito variáveis.
+
+Para combater tais adversidades, o protocolo aplicacional \textit{NetTask}
+responsabiliza-se pelas funcionalidades que serão exploradas no subcapítulo
+\nameref{subsec:nt_desc_funcionalidades}.
+
+Nos subcapítulos seguintes, serão detalhadas as especificações do protocolo,
+nomeadamente o formato do cabeçalho, descrição de funcionalidades e diagramas de
+sequência que ilustram o comportamento do protocolo em situações normais e adversas.
+
+\subsection{Formato de Cabeçalho e Descrição de Campos}
 
 \begin{minipage}{\textwidth}
     \centering
@@ -120,12 +141,72 @@
     \label{fig:nettask_message_format}
 \end{minipage}
 
-\subsection{Diagramas de Sequências}
+\begin{itemize}
+    \item \textbf{\textit{NMS NetTask Version}} (1 \textit{byte}):  versão do protocolo,
+        para a compatibilidade de versões entre o servidor e os agentes;
+    \item \textbf{\textit{Sequence Number}}     (2 \textit{bytes}): número de sequência da mensagem,
+        para a ordenação de pacotes, deteção de pacotes duplicados e identificação de \textit{acknowledgements};
+    \item \textbf{\textit{Flags}}               (5 \textit{bits}):  \textit{flags} de controlo:
+        \begin{itemize}
+           \item [\textbf{\textit{ACK}}] (1º \textit{bit}): \textit{Acknowledgement}, utilizado para confirmar a receção de pacotes;
+           \item [\textbf{\textit{RET}}] (2º \textit{bit}): \textit{Retransmission}, indica que o pacote é uma retransmissão;
+           \item [\textbf{\textit{URG}}] (3º \textit{bit}): \textit{Urgent}, indica que a mensagem é urgente;
+           \item [\textbf{\textit{WP}} ] (4º \textit{bit}): \textit{Window Probe}, utilizado para controlo de fluxo;
+           \item [\textbf{\textit{MF}} ] (5º \textit{bit}): \textit{More Fragments}, para (des)fragmentação de pacotes.
+        \end{itemize}
+    \item \textbf{\textit{Type}}                (3 \textit{bits}): tipo da mensagem:
+        \begin{itemize}
+            \item \textbf{\textit{0 - Undefined}}               : mensagem indefinida, utilizada
+                para testes ou quando nenhum tipo de mensagem é aplicável,
+                por exemplo no envio de \textit{window probes};
+            \item \textbf{\textit{1 - First Connection}}        : primeira conexão de um agente ao servidor;
+            \item \textbf{\textit{2 - Send Task}}               : envio de tarefas pelo servidor;
+            \item \textbf{\textit{3 - Send Metrics}}            : envio de resultados de tarefas pelos agentes;
+            \item \textbf{\textit{4 - EOC (End of Connection)}} : terminação de conexões nos dois sentidos;
+            \item \textbf{\textit{* - Reserved}}                : reservado para futuras extensões. (códigos de 5 a 7);
+        \end{itemize}
+    \item \textbf{\textit{Fragment Offset}}    (4 \textit{bytes}): deslocamento do fragmento,
+        para (des)fragmentação de pacotes; \textcolor{red}{(não está a ser utilizado)}
+    \item \textbf{\textit{Window Size}}        (2 \textit{bytes}): indica o tamanho da janela de receção,
+        para controlo de fluxo;
+    \item \textbf{\textit{Checksum}}           (2 \textit{bytes}): soma de verificação da mensagem,
+        para deteção de erros;
+    \item \textbf{\textit{Message Identifier}} (2 \textit{bytes}): identificador da mensagem,
+        utilizado para a desfragmentação e ordenação de pacotes;
+    \item \textbf{\textit{Agent Identifier}}   (32 \textit{bytes}): identificador do agente,
+        podendo este ser do recetor ou do emissor da mensagem;
+    \item \textbf{\textit{Data/Payload}}       (n \textit{bytes}): carga útil da mensagem com
+        tamanho variável, contendo a informação a ser transmitida nas mensagens do tipo
+        \textit{Send Task} e \textit{Send Metrics}.
+\end{itemize}
+
+\subsection{Descrição de Funcionalidades}
+\label{subsec:nt_desc_funcionalidades}
+
+\textbf{Fragmentação de Pacotes}
+
+\textbf{Retransmissão de Pacotes Perdidos}
+
+\textbf{Deteção de Erros}
+
+\textbf{Ordenação de Pacotes}
+
+\textbf{Deteção e Manuseamento de Pacotes Duplicados}
+
+\textbf{Controlo de Fluxo}
+
+\textbf{Conpatibilidade de Versões}
+
+\subsection{Diagramas de Sequência}
 
 \begin{itemize}
-    \item Normal
+    \item First Connection
+    \item End of Connection
     \item Retransmission
+    \item Desfragmentação e Ordenação de pacotes
     \item Controlo de Fluxo
+    \item Deteção de Erros
+    \item Deteção e Manuseamento de Pacotes Duplicados
 \end{itemize}
 
 %===============================================================================
@@ -149,6 +230,7 @@
 \textcolor{red}{
     Dúvida: deve-se referir todas as bibliotecas utilizadas no desenvolvimento? \\
     por exemplo: \textit{socket}, \textit{os}, \textit{sys}, \textit{threading}, etc
+    Ou apenas as bibliotecas mais relevantes para a solução? \textit{ping3}, \textit{iperf}, etc
 }
 
 \section{\textcolor{red}{Detalhes Técnicos? Maybe}}
