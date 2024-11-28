@@ -38,9 +38,20 @@
 
 \begin{flushleft}
 \begin{abstract}
-    <<O resumo tem como objectivo descrever de forma sucinta o trabalho realizado. Deverá conter uma pequena introdução, seguida por uma breve descrição do trabalho realizado e terminando com uma indicação sumária do seu estado final.>>
-    \par \textbf{Área de Aplicação}: <<Identificação da Área de trabalho.>>
-    \par \textbf{Palavras-Chave}: <<Conjunto de palavras-chave que permitirão referenciar domínios de conhecimento, tecnologias, estratégias, etc., directa ou indirectamente referidos no relatório.>>
+    \par
+    No presente relatório, é apresentada a solução desenvolvida para a Unidade Curricular
+    de \textbf{Comunicações por Computador}, como parte do projeto final do semestre - \textbf{\textit{Network Monitoring System}}.
+    Este trabalho teve como objetivo projetar um sistema capaz de monitorizar e analisar o tráfego de rede entre um servidor
+    central e vários agentes distribuídos, permitindo a recolha de métricas de desempenho e a execução de tarefas de monitorização.
+
+    O sistema foi desenvolvido utilizando dois protocolos aplicacionais principais: \textbf{\textit{AlertFlow}}, destinado à gestão de alertas,
+    e \textbf{\textit{NetTask}}, que assegura a comunicação robusta e confiável entre o servidor e os agentes. Foram implementadas funcionalidades
+    de tolerância a falhas e adaptação a condições adversas, como alta latência e perda de pacotes, garantindo a integridade dos dados transmitidos.
+
+    O trabalho foi concluído com a implementação e validação das principais funcionalidades do sistema, demonstrando a sua eficácia em ambientes
+    de teste representativos. Este relatório documenta detalhadamente o \textit{design}, a implementação e os resultados obtidos.
+
+    \par \textbf{Palavras-Chave}: \textit{Network Monitoring System}, \textit{AlertFlow}, \textit{NetTask}, \textit{Comunicações por Computador}.
 \end{abstract}
 \end{flushleft}
 
@@ -183,17 +194,62 @@ sequência que ilustram o comportamento do protocolo em situações normais e ad
 
 \textbf{Fragmentação de Pacotes}
 
+A fragmentação de pacotes é efetuada quando a carga útil da mensagem excede o
+tamanho máximo permitido, sendo esta dividida em fragmentos de forma a não exceder
+este limite. Cada fragmento é encapsulado num pacote \textit{NetTask} com a
+\textit{flag MF} ativado, indicando que existem mais fragmentos a serem enviados.
+Para permitir a identificação e ordenação dos fragmentos, é atribuído um
+\textit{Message Identifier} único a cada mensagem fragmentada.
+
+
 \textbf{Retransmissão de Pacotes Perdidos}
+
+A retransmissão de pacotes perdidos é efetuada quando o emissor não recebe um
+\textit{acknowledgement} de um pacote enviado, após um determinado intervalo de
+tempo. O emissor reenvia o pacote com a \textit{flag RET} ativada, indicando que
+se trata de uma retransmissão. O recetor, ao receber um pacote com esta \textit{flag},
+descarta o pacote se este já tiver sido recebido anteriormente.
+
 
 \textbf{Deteção de Erros}
 
+A deteção de erros é efetuada através da soma de verificação da mensagem (\textit{Checksum}),
+calculada com base no cabeçalho e na carga útil da mensagem. O recetor, ao receber
+um pacote, calcula a soma de verificação e compara-a com a recebida. Se a soma de
+verificação calculada for diferente da recebida, o pacote é descartado.
+
+
 \textbf{Ordenação de Pacotes}
+
+A ordenação de pacotes é efetuada com base no \textit{Sequence Number} da mensagem,
+permitindo a reordenação de pacotes que chegam fora de ordem. O recetor mantém
+um registo dos pacotes recebidos e descarta pacotes duplicados, reordenando os
+pacotes recebidos de forma a garantir a entrega integral e ordenada das mensagens.
+
 
 \textbf{Deteção e Manuseamento de Pacotes Duplicados}
 
+A deteção e manuseamento de pacotes duplicados, tal como na ordenação de pacotes, recorre ao
+\textit{Sequence Number} da mensagem. O recetor mantém um registo dos pacotes recebidos para
+deteção de pacotes duplicados, descartando pacotes que já tenham sido recebidos anteriormente, e
+enviando um \textit{acknowledgement} ao emissor para confirmar a receção do pacote para evitar
+retransmissões desnecessárias.
+
 \textbf{Controlo de Fluxo}
 
+O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
+indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
+O emissor ajusta o tamanho da janela de envio com base no tamanho da janela de receção do recetor,
+evitando a sobrecarga da ligação e a perda de pacotes. O recetor, ao receber um pacote, envia um
+\textit{acknowledgement} com o tamanho da janela de receção atualizado, permitindo ao emissor ajustar
+o tamanho da janela de envio.
+
 \textbf{Conpatibilidade de Versões}
+
+A compatibilidade de versões é garantida através do campo \textit{NMS NetTask Version} do cabeçalho
+da mensagem, permitindo a identificação da versão do protocolo entre o servidor e os agentes. Se a
+versão do protocolo do emissor for diferente da versão do recetor, a mensagem é descartada, evitando
+possíveis incompatibilidades e erros.
 
 \subsection{Diagramas de Sequência}
 
