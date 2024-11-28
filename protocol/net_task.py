@@ -11,7 +11,6 @@ from .exceptions.checksum_mismatch import ChecksumMismatchException
 # - NetTask version ( 1 byte)
 # - Sequence number ( 2 bytes)
 # - Flags and Type  ( 1 byte)
-# - Fragment Offset ( 4 bytes)
 # - Window size     ( 2 bytes)
 # - Checksum        ( 2 bytes)
 # - Message ID      ( 2 bytes)
@@ -46,7 +45,6 @@ from .exceptions.checksum_mismatch import ChecksumMismatchException
 SIZE_NMS_VERSION = 1
 SIZE_SEQ_NUMBER  = 2
 SIZE_FLAGS_TYPE  = 1
-SIZE_FRAGMENT    = 4
 SIZE_WINDOW_SIZE = 2
 SIZE_CHECKSUM    = 2
 SIZE_MSG_ID      = 2
@@ -54,8 +52,7 @@ SIZE_IDENTIFIER  = 32
 
 # Header total size
 HEADER_SIZE = (SIZE_NMS_VERSION + SIZE_SEQ_NUMBER + SIZE_FLAGS_TYPE +
-               SIZE_FRAGMENT + SIZE_WINDOW_SIZE + SIZE_CHECKSUM +
-               SIZE_MSG_ID + SIZE_IDENTIFIER)
+               SIZE_WINDOW_SIZE + SIZE_CHECKSUM + SIZE_MSG_ID + SIZE_IDENTIFIER)
 
 # Struct format for the header fields
 # !    network (big-endian) byte order
@@ -63,7 +60,7 @@ HEADER_SIZE = (SIZE_NMS_VERSION + SIZE_SEQ_NUMBER + SIZE_FLAGS_TYPE +
 # H    unsigned short      (2 bytes)
 # I    unsigned int        (4 bytes)
 # Xs   string with X chars (X bytes)
-STRUCT_FORMAT = '!B H B I H H H 32s'
+STRUCT_FORMAT = '!B H B H H H 32s'
 
 
 ###
@@ -82,7 +79,7 @@ class NetTask:
     @staticmethod
     def calculate_checksum(packet):
         checksum_start = (SIZE_NMS_VERSION + SIZE_SEQ_NUMBER + SIZE_FLAGS_TYPE +
-                          SIZE_FRAGMENT + SIZE_WINDOW_SIZE)
+                          SIZE_WINDOW_SIZE)
         checksum_end = checksum_start + SIZE_CHECKSUM
         data = packet[:checksum_start] + packet[checksum_end:]
 
@@ -117,8 +114,8 @@ class NetTask:
             if version != C.NET_TASK_VERSION:
                 raise InvalidVersionException(version, C.NET_TASK_VERSION)
 
-            version, seq_number, flags_type, fragment_offset, \
-                window_size, checksum, msg_id, identifier = struct.unpack(STRUCT_FORMAT, header)
+            version, seq_number, flags_type, window_size, \
+                checksum, msg_id, identifier = struct.unpack(STRUCT_FORMAT, header)
 
         except Exception:
             raise InvalidHeaderException()
@@ -150,7 +147,6 @@ class NetTask:
                 "more_fragments": more_fragments_flag,
             },
             "msg_type": msg_type,
-            "fragment_offset": fragment_offset,
             "window_size": window_size,
             "checksum": checksum,
             "msg_id": msg_id,
@@ -159,8 +155,8 @@ class NetTask:
         }
 
     @staticmethod
-    def build_header(self, seq_number, flags_type, fragment_offset,
-                     window_size, msg_id, identifier, data):
+    def build_header(self, seq_number, flags_type, window_size,
+                     msg_id, identifier, data):
 
         # Initial header with checksum set to 0
         header = struct.pack(
@@ -168,7 +164,6 @@ class NetTask:
             C.NET_TASK_VERSION,
             seq_number,
             flags_type,
-            fragment_offset,
             window_size,
             0,  # Placeholder for checksum
             msg_id,
@@ -187,7 +182,6 @@ class NetTask:
             C.NET_TASK_VERSION,
             seq_number,
             flags_type,
-            fragment_offset,
             window_size,
             checksum,
             msg_id,
@@ -222,7 +216,6 @@ class NetTask:
                          for i in range(0, len(data), data_chunk_size)] or [b""])
 
         for i, data_segment in enumerate(data_segments):
-            fragment_offset = i * (len(data_segment) + HEADER_SIZE)
 
             # Set the "more_fragments" flag
             flags["more_fragments"] = 1 if i < len(data_segments) - 1 else 0
@@ -241,7 +234,6 @@ class NetTask:
             header = self.build_header(self,
                                        seq_number,
                                        flags_type,
-                                       fragment_offset,
                                        window_size,
                                        msg_id,
                                        identifier,
@@ -274,7 +266,6 @@ class NetTask:
         header = self.build_header(self,
                                    ack_number,
                                    flags_type,
-                                   0,           # No fragment offset
                                    window_size,
                                    packet["msg_id"],
                                    identifier,
