@@ -38,20 +38,33 @@
 
 \begin{flushleft}
 \begin{abstract}
-    \par
-    No presente relatório, é apresentada a solução desenvolvida para a Unidade Curricular
-    de \textbf{Comunicações por Computador}, como parte do projeto final do semestre - \textbf{\textit{Network Monitoring System}}.
-    Este trabalho teve como objetivo projetar um sistema capaz de monitorizar e analisar o tráfego de rede entre um servidor
-    central e vários agentes distribuídos, permitindo a recolha de métricas de desempenho e a execução de tarefas de monitorização.
+    \par No presente relatório, é apresentada a solução desenvolvida para a Unidade Curricular
+    de \textbf{Comunicações por Computador}, como parte do projeto final do semestre -
+    \textbf{\textit{Network Monitoring System}}.
+    Este trabalho teve como objetivo projetar um sistema capaz de monitorizar
+    o tráfego de rede, bem como o desempenho dos dispositivos, entre um servidor
+    centralizado e vários agentes distribuídos, permitindo a execução de tarefas
+    de monitorização, com a respetiva recolha de métricas de desempenho e envio
+    de alertas previamente configurados.
 
-    O sistema foi desenvolvido utilizando dois protocolos aplicacionais principais: \textbf{\textit{AlertFlow}}, destinado à gestão de alertas,
-    e \textbf{\textit{NetTask}}, que assegura a comunicação robusta e confiável entre o servidor e os agentes. Foram implementadas funcionalidades
-    de tolerância a falhas e adaptação a condições adversas, como alta latência e perda de pacotes, garantindo a integridade dos dados transmitidos.
+    No sistema desenvolvido implementaram-se dois protocolos aplicacionais: \\
+    \textbf{\textit{AlertFlow}}:
+    destinado ao envio de alertas quando certas condições de monitorização
+    definidas são excedidas, utilizando, como protocolo de transporte,
+    o \textit{Transmission Control Protocol} (TCP). \\
+    \textbf{\textit{NetTask}}: implementado para a comunicação de tarefas de monitorização
+    e recolha de métricas, sobre o \textit{User Datagram Protocol} (UDP),
+    este protocolo aplicacional foi desenvolvido de forma a assegurar
+    a comunicação robusta e confiável entre o servidor e os agentes.
 
-    O trabalho foi concluído com a implementação e validação das principais funcionalidades do sistema, demonstrando a sua eficácia em ambientes
-    de teste representativos. Este relatório documenta detalhadamente o \textit{design}, a implementação e os resultados obtidos.
+    O trabalho foi concluído com a implementação e validação das principais funcionalidades do sistema,
+    demonstrando a sua eficácia em ambientes de teste representativos em ambientes virtualizados.
+    Este relatório documenta detalhadamente o \textit{design}, implementação, utilização
+    e resultados obtidos.
 
-    \par \textbf{Palavras-Chave}: \textit{Network Monitoring System}, \textit{AlertFlow}, \textit{NetTask}, \textit{Comunicações por Computador}.
+\par \textbf{Palavras-Chave}: \textit{Network Monitoring System}, TCP, UDP,
+    \textit{AlertFlow}, \textit{NetTask}, \textit{python3}, \textit{iperf3},
+    \textit{ping}, \textit{Comunicações por Computador}.
 \end{abstract}
 \end{flushleft}
 
@@ -68,16 +81,12 @@
 %% Changes table of content name
 \renewcommand{\contentsname}{Índice}
 \renewcommand{\listfigurename}{Índice de Figuras}
-\renewcommand{\listtablename}{Índice de Tabelas}
 \renewcommand{\lstlistlistingname}{Índice de \textit{Snippets}}
 
 \tableofcontents
 \pagebreak
 
 \listoffigures
-\pagebreak
-
-\listoftables
 \pagebreak
 
 \lstlistoflistings
@@ -95,10 +104,12 @@
 
 \chapter{Arquitetura da Solução}
 
-\textcolor{red}{
-    Dúvida: o diagrama da arquitetura da solução deve ser
-    mais geral ou mais específico à solução (python) desenvolvida?
-}
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/architecture.png}
+    \captionof{figure}{Arquitetura da solução \textit{Network Monitoring System}}
+    \label{fig:architecture}
+\end{minipage}
 
 %===============================================================================
 % END ARQUITETURA DA SOLUÇÃO
@@ -136,12 +147,13 @@ de mensagens, sobretudo em rotas deterioradas, com perdas ou duplicação de pac
 latências elevadas e taxas de débito variáveis.
 
 Para combater tais adversidades, o protocolo aplicacional \textit{NetTask}
-responsabiliza-se pelas funcionalidades que serão exploradas no subcapítulo
-\nameref{subsec:nt_desc_funcionalidades}.
+responsabiliza-se pelas funcionalidades que serão exploradas no seguinte
+subcapítulo \nameref{subsec:nt_desc_funcionalidades}.
 
-Nos subcapítulos seguintes, serão detalhadas as especificações do protocolo,
-nomeadamente o formato do cabeçalho, descrição de funcionalidades e diagramas de
-sequência que ilustram o comportamento do protocolo em situações normais e adversas.
+Nos próximos subcapítulos, serão detalhadas as especificações do protocolo,
+nomeadamente o formato do cabeçalho e descrição dos respetivos campos,
+descrição de funcionalidades e diagramas de sequência que ilustram o
+comportamento do protocolo em situações normais e adversas.
 
 \subsection{Formato de Cabeçalho e Descrição de Campos}
 
@@ -154,7 +166,7 @@ sequência que ilustram o comportamento do protocolo em situações normais e ad
 
 \begin{itemize}
     \item \textbf{\textit{NMS NetTask Version}} (1 \textit{byte}):  versão do protocolo,
-        para a compatibilidade de versões entre o servidor e os agentes;
+        para assegurar a compatibilidade de versões entre o servidor e os agentes;
     \item \textbf{\textit{Sequence Number}}     (2 \textit{bytes}): número de sequência da mensagem,
         para a ordenação de pacotes, deteção de pacotes duplicados e identificação de \textit{acknowledgements};
     \item \textbf{\textit{Flags}}               (5 \textit{bits}):  \textit{flags} de controlo:
@@ -162,87 +174,101 @@ sequência que ilustram o comportamento do protocolo em situações normais e ad
            \item [\textbf{\textit{ACK}}] (1º \textit{bit}): \textit{Acknowledgement}, utilizado para confirmar a receção de pacotes;
            \item [\textbf{\textit{RET}}] (2º \textit{bit}): \textit{Retransmission}, indica que o pacote é uma retransmissão;
            \item [\textbf{\textit{URG}}] (3º \textit{bit}): \textit{Urgent}, indica que a mensagem é urgente;
-           \item [\textbf{\textit{WP}} ] (4º \textit{bit}): \textit{Window Probe}, utilizado para controlo de fluxo;
+           \item [\textbf{\textit{WP}} ] (4º \textit{bit}): \textit{Window Probe}, utilizado para o controlo de fluxo;
            \item [\textbf{\textit{MF}} ] (5º \textit{bit}): \textit{More Fragments}, para (des)fragmentação de pacotes.
         \end{itemize}
     \item \textbf{\textit{Type}}                (3 \textit{bits}): tipo da mensagem:
         \begin{itemize}
-            \item \textbf{\textit{0 - Undefined}}               : mensagem indefinida, utilizada
+            \item [\textbf{0}]  \textbf{\textit{Undefined}}:               mensagem indefinida, utilizada
                 para testes ou quando nenhum tipo de mensagem é aplicável,
                 por exemplo no envio de \textit{window probes};
-            \item \textbf{\textit{1 - First Connection}}        : primeira conexão de um agente ao servidor;
-            \item \textbf{\textit{2 - Send Task}}               : envio de tarefas pelo servidor;
-            \item \textbf{\textit{3 - Send Metrics}}            : envio de resultados de tarefas pelos agentes;
-            \item \textbf{\textit{4 - EOC (End of Connection)}} : terminação de conexões nos dois sentidos;
-            \item \textbf{\textit{* - Reserved}}                : reservado para futuras extensões. (códigos de 5 a 7);
+            \item [\textbf{1}]  \textbf{\textit{First Connection}}:        primeira conexão de um agente ao servidor;
+            \item [\textbf{2}]  \textbf{\textit{Send Tasks}}:              envio de tarefas pelo servidor;
+            \item [\textbf{3}]  \textbf{\textit{Send Metrics}}:            envio de resultados de tarefas pelos agentes;
+            \item [\textbf{4}]  \textbf{\textit{EOC (End of Connection)}}: terminação de conexões nos dois sentidos;
+            \item [\textbf{*}] \textbf{\textit{Reserved}}:                reservado para futuras extensões. (de 5 a 7);
         \end{itemize}
     \item \textbf{\textit{Window Size}}        (2 \textit{bytes}): indica o tamanho da janela de receção,
-        para controlo de fluxo;
+        para o controlo de fluxo;
     \item \textbf{\textit{Checksum}}           (2 \textit{bytes}): soma de verificação da mensagem,
-        para deteção de erros;
+        para a deteção de erros;
     \item \textbf{\textit{Message Identifier}} (2 \textit{bytes}): identificador da mensagem,
         utilizado para a desfragmentação e ordenação de pacotes;
     \item \textbf{\textit{Agent Identifier}}   (32 \textit{bytes}): identificador do agente,
-        podendo este ser do recetor ou do emissor da mensagem;
+        podendo este ser recetor ou emissor da mensagem;
     \item \textbf{\textit{Data/Payload}}       (n \textit{bytes}): carga útil da mensagem com
         tamanho variável, contendo a informação a ser transmitida nas mensagens do tipo
-        \textit{Send Task} e \textit{Send Metrics}.
+        \textit{Send Tasks} e \textit{Send Metrics}.
 \end{itemize}
+
+\clearpage
 
 \subsection{Descrição de Funcionalidades}
 \label{subsec:nt_desc_funcionalidades}
-
-\textbf{Fragmentação de Pacotes}
-
-A fragmentação de pacotes é efetuada quando a carga útil da mensagem excede o
-tamanho máximo permitido, sendo esta dividida em fragmentos de forma a não exceder
-este limite. Cada fragmento é encapsulado num pacote \textit{NetTask} com a
-\textit{flag MF} ativado, indicando que existem mais fragmentos a serem enviados.
-Para permitir a identificação e ordenação dos fragmentos, é atribuído um
-\textit{Message Identifier} único a cada mensagem fragmentada.
-
 
 \textbf{Retransmissão de Pacotes Perdidos}
 
 A retransmissão de pacotes perdidos é efetuada quando o emissor não recebe um
 \textit{acknowledgement} de um pacote enviado, após um determinado intervalo de
-tempo. O emissor reenvia o pacote com a \textit{flag RET} ativada, indicando que
-se trata de uma retransmissão. O recetor, ao receber um pacote com esta \textit{flag},
-descarta o pacote se este já tiver sido recebido anteriormente.
+tempo. Para a concretização desta funcionalidade, o emissor guarda todos os pacotes
+enviados em memória, reenviando os pacotes não confirmados após o intervalo de tempo
+definido no fichero \texttt{constants.py} sobre a nomenclatura \texttt{RETRANSMIT\_SLEEP\_TIME},
+os pacotes mantém o cabeçalho original, sendo apenas ativada a \textit{flag RET}.
 
+
+\textbf{(Des)Fragmentação e Ordenação de Pacotes}
+
+A fragmentação de pacotes ocorre quando a carga útil da mensagem excede o tamanho
+máximo permitido, sendo este tamanho predefinido para 1500 \textit{bytes}, no
+ficheiro \texttt{constants.py} sobre a nomenclatura \texttt{BUFFER\_SIZE},
+uma vez que este é o valor máximo para o \textit{Maximum Transmission Unit} (MTU).
+
+Na fragmentação de pacotes os dados da mensagem (campo \textit{Data}) é dividido em fragmentos,
+de forma a que, com adição do cabeçalho, o tamanho total do pacote não exceda o tamanho
+máximo permitido. Os primeiros fragmentos são marcados com a \textit{flag MF},
+com exceção do último fragmento, indicando que não existem mais fragmentos a serem enviados.
+Para a identificação dos fragmentos, é atribuído um \textit{Message Identifier} único, sendo
+este igual ao número de sequência do primeiro fragmento. Os números de sequência dos fragmentos
+são incrementados de forma sequencial.
+
+Na desfragmentação, o recetor mantém em memória os fragmentos recebidos, cada pacote
+recebido é guardado em um \textit{array} caso seja fragmentado. Para identificar
+se um pacote é ou não um fragmento, é verificado se a \textit{flag MF} está desativada
+e se o \textit{Message Identifier} é igual ao número de sequência do pacote. Se tal
+não se verificar, o pacote é guardado em memória até que todos os fragmentos sejam
+recebidos, ou seja, devem existir todos os fragmentos tal que o seu número de sequência
+esteja entre os seus \textit{Message Identifiers} e o número de sequência do último fragmento,
+este procedimento garante que a mensagem é desfragmentada apenas quando todos os
+fragmentos são recebidos, uma vez que a ordem de chegada destes não é garantida.
+
+Uma vez que todos os fragmentos são recebidos, estes são ordenados pelo número de
+sequência e os dados da mensagem são concatenados para formar a mensagem original.
+
+O campo \textit{Message Identifier} permite que fragmentos de diferentes mensagens
+sejam distinguidos, garantindo a integridade dos pacotes recebidos.
+
+
+\clearpage
+
+\textbf{Deteção e Manuseamento de Pacotes Duplicados}
+
+A deteção e manuseamento de pacotes duplicados, tal como na (des)fragmentação
+e ordenação de pacotes, recorre ao \textit{Sequence Number} da mensagem.
+O recetor mantém um registo dos números de sequência pacotes recebidos para a
+deteção de pacotes duplicados, escartando pacotes que já tenham sido recebidos anteriormente, e
+reenviando um \textit{acknowledgement} ao emissor para confirmar a receção do pacote
+de forma a evitar retransmissões desnecessárias.
+
+\textcolor{red}{NOTA TODO ainda só fazemos esta deteção para pacotes fragmentados!}
 
 \textbf{Deteção de Erros}
 
 A deteção de erros é efetuada através da soma de verificação da mensagem (\textit{Checksum}),
 calculada com base no cabeçalho e na carga útil da mensagem. O recetor, ao receber
 um pacote, calcula a soma de verificação e compara-a com a recebida. Se a soma de
-verificação calculada for diferente da recebida, o pacote é descartado.
+verificação calculada for diferente da recebida, o pacote é descartado, e o emissor
+uma vez que não recebe um \textit{acknowledgement} reenviará o pacote.
 
-
-\textbf{Ordenação de Pacotes}
-
-A ordenação de pacotes é efetuada com base no \textit{Sequence Number} da mensagem,
-permitindo a reordenação de pacotes que chegam fora de ordem. O recetor mantém
-um registo dos pacotes recebidos e descarta pacotes duplicados, reordenando os
-pacotes recebidos de forma a garantir a entrega integral e ordenada das mensagens.
-
-
-\textbf{Deteção e Manuseamento de Pacotes Duplicados}
-
-A deteção e manuseamento de pacotes duplicados, tal como na ordenação de pacotes, recorre ao
-\textit{Sequence Number} da mensagem. O recetor mantém um registo dos pacotes recebidos para
-deteção de pacotes duplicados, descartando pacotes que já tenham sido recebidos anteriormente, e
-enviando um \textit{acknowledgement} ao emissor para confirmar a receção do pacote para evitar
-retransmissões desnecessárias.
-
-\textbf{Controlo de Fluxo}
-
-O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
-indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
-O emissor ajusta o tamanho da janela de envio com base no tamanho da janela de receção do recetor,
-evitando a sobrecarga da ligação e a perda de pacotes. O recetor, ao receber um pacote, envia um
-\textit{acknowledgement} com o tamanho da janela de receção atualizado, permitindo ao emissor ajustar
-o tamanho da janela de envio.
 
 \textbf{Conpatibilidade de Versões}
 
@@ -251,6 +277,24 @@ da mensagem, permitindo a identificação da versão do protocolo entre o servid
 versão do protocolo do emissor for diferente da versão do recetor, a mensagem é descartada, evitando
 possíveis incompatibilidades e erros.
 
+
+\textbf{Controlo de Fluxo}
+
+O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
+indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
+O valor inicial da janela de receção é definido no ficheiro \texttt{constants.py} sobre a nomenclatura
+\texttt{INITIAL\_WINDOW\_SIZE}, sendo este valor de 32 pacotes. O emissor, ao enviar um pacote, ...
+
+\textcolor{red}{
+    TODO: neste momento usamos o window size no array de pacotes a ordenar/desfragmentar,
+    não deverá ser nos pacotes por receber acks? ou ambos?
+}
+
+\textcolor{red}{
+    Neste descrição de funcionalidades, não falamos que o servidor guarda por exemplo,
+    pacotes por ordenar/desfragmentar, num dicionário para cada agente, devemos referir?
+}
+
 \subsection{Diagramas de Sequência}
 
 \begin{itemize}
@@ -258,9 +302,9 @@ possíveis incompatibilidades e erros.
     \item End of Connection
     \item Retransmission
     \item Desfragmentação e Ordenação de pacotes
-    \item Controlo de Fluxo
-    \item Deteção de Erros
     \item Deteção e Manuseamento de Pacotes Duplicados
+    \item Deteção de Erros
+    \item Controlo de Fluxo
 \end{itemize}
 
 %===============================================================================
@@ -273,9 +317,45 @@ possíveis incompatibilidades e erros.
 
 \chapter{Implementação}
 
-\section{\textcolor{red}{Estrutura do Projeto?}}
-
 \section{Parâmetros dos Executáveis}
+
+\subsection{\textit{nms\_server.py}}
+
+\begin{lstlisting}[
+    language=,
+    caption={Parâmetros do executável \textit{nms\_server.py}},
+    label={lst:nms_server_params},
+    numbers=none
+]
+$ ./nms_server.py --help
+usage: nms_server.py [-h] [-c CONFIG] [-v]
+
+Network Management System Server
+
+options:
+  -h, --help            show this help message and exit
+  -c CONFIG, --config CONFIG
+                        Configuration file path
+  -v, --verbose         Enable verbose output
+\end{lstlisting}
+
+\begin{lstlisting}[
+    language=,
+    caption={Parâmetros do executável \textit{nms\_agent.py}},
+    label={lst:nms_agent_params},
+    numbers=none
+]
+$ ./nms_agent.py --help
+usage: nms_agent.py [-h] [-s SERVER] [-v]
+
+Network Management System Agent
+
+options:
+  -h, --help            show this help message and exit
+  -s SERVER, --server SERVER
+                        Server IP
+  -v, --verbose         Enable verbose output
+\end{lstlisting}
 
 \section{Ficheiro de Configuração}
 
@@ -298,6 +378,11 @@ possíveis incompatibilidades e erros.
 %===============================================================================
 
 \chapter{Testes e Resultados}
+
+\textcolor{red}{
+    As demonstrações para situcoes normais e adversas, contam para este capítulo?
+    Ou teremos de fazer testes mais específicos?
+}
 
 \textcolor{red}{
     Para além da testagem manual contínua ao longo do desenvolvimento, foram
@@ -341,6 +426,8 @@ desempenho e a execução de tarefas de monitorização de forma eficiente e fi�
 
 \textcolor{red}{
     TODO
+    Encriptação de mensagens
+    Gerar análises gráficas dos resultados
 }
 
 %===============================================================================
