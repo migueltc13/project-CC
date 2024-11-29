@@ -12,7 +12,8 @@ from constants import EOC_ACK_TIMEOUT
 from nms_agent import (
     ClientTCP,
     ClientUDP,
-    ClientPool
+    ClientPool,
+    ClientTask
 )
 
 
@@ -31,9 +32,10 @@ def main():
     agent_id = socket.gethostname()
 
     pool = ClientPool()
+    client_task = ClientTask()
 
     tcp_client = ClientTCP(agent_id, server_ip)
-    udp_client = ClientUDP(agent_id, server_ip, pool, verbose=args.verbose)
+    udp_client = ClientUDP(agent_id, server_ip, pool, client_task, verbose=args.verbose)
 
     udp_client.start()
 
@@ -41,8 +43,8 @@ def main():
     udp_client.send_first_connection()
 
     # Test metric
-    time.sleep(5)
-    udp_client.send_metrics(None)
+    # time.sleep(5)
+    # udp_client.send_metrics(None)
 
     # Test alert (AlertFlow.CPU_USAGE = 0)
     # tcp_client.send_alert(0, "Test CPU usage Alert")
@@ -50,7 +52,15 @@ def main():
     try:
         # Loop to keep the main thread running
         while udp_client.shutdown_flag.is_set() is False:
-            time.sleep(1)
+            if len(client_task.loaded_tasks) == 0:
+                time.sleep(1)
+                continue
+            print(f"Loaded tasks: {client_task.loaded_tasks}")
+            client_task.run_tasks()
+            print(f"Task results: {client_task.tasks_results}")
+            # TODO remove this: reset task results
+            client_task.tasks_results = dict()
+            # print(f"Empty task results: {client_task.tasks_results}")
     except KeyboardInterrupt:
         print("Agent interrupted. Shutting down...")
     finally:
