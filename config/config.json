@@ -2,76 +2,69 @@
     "tasks": [
         {
             "task_id": 1,
+            "agent_id": "acer",
             "frequency": 20,
-            "devices": [
-                {
-                    "device_id": "n1",
-                    "device_metrics": {
-                        "cpu_usage": true,
-                        "ram_usage": true,
-                        "interface_stats": ["eth0", "eth1", "eth2"]
-                    },
-                    "link_metrics": {
-                        "bandwidth": {
-                            "enabled": true,
-                            "tool": "iperf",
-                            "is_client": true,
-                            "server_address": "192.168.1.10",
-                            "duration": 10,
-                            "transport": "TCP",
-                            "frequency": 30
-                        },
-                        "jitter": {
-                            "enabled": true,
-                            "tool": "iperf",
-                            "frequency": 30
-                        },
-                        "packet_loss": {
-                            "enabled": true,
-                            "tool": "iperf",
-                            "frequency": 30
-                        },
-                        "latency": {
-                            "enabled": true,
-                            "tool": "ping",
-                            "destination": "192.168.1.1",
-                            "packet_count": 5,
-                            "frequency": 15
-                        }
-                    },
-                    "alertflow_conditions": {
-                        "cpu_usage": 0.8,
-                        "ram_usage": 0.9,
-                        "interface_stats": {
-                            "threshold": 2000,
-                            "interfaces": ["eth0", "eth1"]
-                        },
-                        "packet_loss": 5,
-                        "jitter": 100
-                    }
+            "TODO": "iperf can be run multiple times in a single task, handle this.",
+            "tools_params": {
+                "iperf": {
+                    "is_client": true,
+                    "server_address": "192.168.1.10",
+                    "port": 5001,
+                    "duration": 10,
+                    "transport": "TCP"
                 },
-                {
-                    "device_id": "n2",
-                    "device_metrics": {
-                        "cpu_usage": true,
-                        "ram_usage": false,
-                        "interface_stats": ["eth0", "eth1"]
-                    },
-                    "link_metrics": {
-                        "latency": {
-                            "enabled": true,
-                            "tool": "ping",
-                            "destination": "192.168.1.2",
-                            "packet_count": 10,
-                            "frequency": 30
-                        }
-                    },
-                    "alertflow_conditions": {
-                        "cpu_usage": 0.85,
-                        "latency": 50
-                    }
+                "ping": {
+                    "packet_count": 5
                 }
-            ]
+            },
+            "device_metrics": {
+                "cpu_usage": true,
+                "ram_usage": true,
+                "interface_stats": ["eth0", "eth1", "eth2"]
+            },
+            "link_metrics": {
+                "bandwidth": {
+                    "tool": "iperf"
+                },
+                "jitter": {
+                    "tool": "iperf"
+                },
+                "packet_loss": {
+                    "tool": "iperf"
+                },
+                "latency": {
+                    "tool": "ping",
+                    "destination": "192.168.1.1"
+                }
+            },
+            "alertflow_conditions": {
+                "cpu_usage": 0.8,
+                "ram_usage": 0.9,
+                "interface_stats": {
+                    "threshold": 2000,
+                    "interfaces": ["eth0", "eth1"]
+                },
+                "packet_loss": 5,
+                "jitter": 100
+            }
+        },
+        {
+            "task_id": 2,
+            "agent_id": "n2",
+            "frequency": 20,
+            "device_metrics": {
+                "cpu_usage": true,
+                "ram_usage": false,
+                "interface_stats": ["eth0"]
+            },
+            "alertflow_conditions": {
+                "cpu_usage": 0.8,
+                "ram_usage": 0.9,
+                "interface_stats": {
+                    "threshold": 2000,
+                    "interfaces": ["eth0"]
+                }
+            }
         }
     ]
 }
