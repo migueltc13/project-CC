@@ -38,7 +38,7 @@ class Pool:
             del self.seq_numbers[client]
             del self.packets_to_ack[client]
             del self.packets_to_reorder[client]
-            del self.agents_window_sizes
+            del self.agents_window_sizes[client]
 
     def get_connected_clients(self):
         with self.lock:
