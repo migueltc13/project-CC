@@ -27,7 +27,13 @@ class Pool:
             self.clients[client] = addr
             self.seq_numbers[client] = 1
             self.packets_to_ack[client] = []
-            self.packets_to_reorder[client] = []
+
+            # The packets to reorder can be already created by the server
+            # for that client, so we need to check if it exists before creating
+            # This is necessary because the server can receive packets out of order
+            if client not in self.packets_to_reorder:
+                self.packets_to_reorder[client] = []
+
             self.agents_window_sizes[client] = INITIAL_WINDOW_SIZE
 
     def remove_client(self, client):
@@ -90,28 +96,62 @@ class Pool:
     # Server window size
     ###
 
-    def add_packet_to_reorder(self, client, packet):
+    def reorder_packets(self, client, packet):
         with self.lock:
+            # Copy the packet to ensure data encapsulation
             copy_packet = packet.copy()
+
+            # Check if client exists
+            if client not in self.packets_to_reorder:
+                self.packets_to_reorder[client] = []
+
+            # Add the packet to the list of packets to reorder
             self.packets_to_reorder[client].append(copy_packet)
             self.server_window_size -= 1
 
-    def reorder_packets(self, client, packet):
-        try:
-            # Add the packet to the list of packets to reorder
-            self.add_packet_to_reorder(client, packet)
-        except KeyError:
-            # No packets to reorder from that client, return the packet as is
-            return packet
+            # Check if the defragmention/reordering is possible
+            # it is possible when all packets with sequence number,
+            # between the message id and the last fragment, are received
+            # if not possible, return None to wait for the missing packets
 
-        with self.lock:
+            # get all packets to reorder/defragment for the client
             packets = self.packets_to_reorder[client]
+
+            # get the receive packet message id
+            message_id = packet["msg_id"]
 
             # filter only packets with the same message id
             packets = [
                 f_packet for f_packet in packets
                 if f_packet["msg_id"] == packet["msg_id"]
             ]
+
+            # get the last fragment (if it exists)
+            # to check if all packets were received
+            last_fragment = None
+            for p in packets:
+                if p["flags"]["more_fragments"] == 0:
+                    last_fragment = p
+                    break
+
+            # if the last fragment was not received yet, return None
+            if last_fragment is None:
+                return None
+
+            # check if all packets with the same message id are received
+            # if not, return None
+            sequence_numbers = [p["seq_number"] for p in packets]
+            for i in range(message_id, last_fragment["seq_number"] + 1):
+                if i not in sequence_numbers:
+                    return None
+
+            # if the message_id is equal to sequence number of the packet
+            # with the last fragment, the message is not fragmented,
+            # return the packet as is
+            if message_id == last_fragment["seq_number"]:
+                return packet
+
+            # Fragmentation/reordering is possible
 
             # save the packets to remove from the list of packets to reorder
             buffered_packets = packets.copy()

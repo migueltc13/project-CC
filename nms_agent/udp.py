@@ -154,13 +154,14 @@ class UDP(threading.Thread):
             self.client_socket.sendto(ack_packet, (self.server_ip, C.UDP_PORT))
 
         # Packet reordering and defragmentation
-        # if the more_flags is set, add the packet to the list of packets to be reordered
-        # else reorder the packets and defragment the data and combine the packets into one
-        if packet["flags"]["more_fragments"] == 1:
-            self.pool.add_packet_to_reorder(packet)
-            return
-        else:
-            packet = self.pool.reorder_packets(packet)
+        packet = self.pool.reorder_packets(packet)
+        if packet is None:
+            if self.verbose:
+                print("Adding packet to defrag/reorder array")
+            return  # wait for the missing packets
+
+        if self.verbose:
+            print(f"Possible defragmented packet: {json.dumps(packet, indent=2)}")
 
         # Based on the packet type:
         # - Send task: process the task and start running it, sending metrics back to the server

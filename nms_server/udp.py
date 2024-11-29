@@ -185,13 +185,14 @@ class UDP(threading.Thread):
             print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
 
         # Packet reordering and defragmentation
-        # if the more_flags is set, add the packet to the list of packets to be reordered
-        # else reorder the packets and defragment the data and combine the packets into one
-        if packet["flags"]["more_fragments"] == 1:
-            self.pool.add_packet_to_reorder(agent_id, packet)
-            return
-        else:
-            packet = self.pool.reorder_packets(agent_id, packet)
+        packet = self.pool.reorder_packets(agent_id, packet)
+        if packet is None:
+            if self.verbose and self.ui.view_mode:
+                print(f"Adding packet to defrag/reorder array for {agent_id}")
+            return  # wait for the missing packets
+
+        # if self.verbose and self.ui.view_mode:
+        #     print(f"Possible defragmented packet: {json.dumps(packet, indent=2)}")
 
         # Based on the packet type:
         # - First connection: add the client to the clients pool
@@ -200,6 +201,9 @@ class UDP(threading.Thread):
         eoc_received = False
         match packet["msg_type"]:
             case self.net_task.FIRST_CONNECTION:
+                # Defragmentation test
+                # self.send("A" * 3000, {}, self.net_task.UNDEFINED, agent_id, addr)
+
                 # Send tasks to the agent
                 tasks = self.task_server.get_agent_tasks(agent_id)
                 if tasks:
