@@ -1,39 +1,8 @@
 # CC
 
-## Project Structure
+## Solution Architecture
 
-```
-.
-├── config
-│   └── config.json
-├── nms_agent
-│   ├── __init__.py
-│   ├── tcp.py
-│   └── udp.py
-├── nms_server
-│   ├── __init__.py
-│   ├── config.py
-│   ├── pool.py
-│   ├── tcp.py
-│   ├── udp.py
-│   └── ui.py
-├── protocol
-│   ├── exceptions
-│   │   ├── checksum_mismatch.py
-│   │   ├── invalid_header.py
-│   │   └── invalid_version.py
-│   ├── alert_flow.py
-│   └── net_task.py
-├── sql
-│   ├── create/
-│   ├── populate/
-│   ├── queries/
-│   └── database.py
-├── constants.py
-├── nms_agent.py
-├── nms_server.py
-└── requirements.txt
-```
+![Solution Architecture](report/img/architecture.png)
 
 ### To Do List
 
@@ -100,4 +69,5 @@ the receiver advertises a window size greater than 0.
 
 - json
 - iperf
-- ping3 (requires root privileges, maybe use another library that doesn't require root privileges)
+- psutil
+- ping3
