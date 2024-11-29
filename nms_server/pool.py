@@ -149,6 +149,11 @@ class Pool:
             # with the last fragment, the message is not fragmented,
             # return the packet as is
             if message_id == last_fragment["seq_number"]:
+                # remove the packet from the list of packets to reorder
+                self.packets_to_reorder[client] = [
+                    f_packet for f_packet in self.packets_to_reorder[client]
+                    if f_packet != packet
+                ]
                 return packet
 
             # Fragmentation/reordering is possible
