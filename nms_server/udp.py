@@ -15,7 +15,7 @@ from protocol.exceptions.checksum_mismatch import ChecksumMismatchException
 
 
 class UDP(threading.Thread):
-    def __init__(self, ui, pool, verbose=False, host='0.0.0.0'):
+    def __init__(self, ui, pool, task_server, verbose=False, host='0.0.0.0'):
         super().__init__(daemon=True)
         self.ui = ui
         self.host = host
@@ -26,6 +26,7 @@ class UDP(threading.Thread):
         self.shutdown_flag = threading.Event()
         self.net_task = NetTask()
         self.pool = pool
+        self.task_server = task_server
         self.lock = threading.Lock()
         self.threads = []
         self.verbose = verbose
@@ -200,7 +201,14 @@ class UDP(threading.Thread):
         match packet["msg_type"]:
             case self.net_task.FIRST_CONNECTION:
                 # Send tasks to the agent
-                pass
+                tasks = self.task_server.get_agent_tasks(agent_id)
+                if tasks:
+                    for task in tasks:
+                        self.send(json.dumps(task), {}, self.net_task.SEND_TASKS, agent_id, addr)
+                        if self.verbose and self.ui.view_mode:
+                            print(f"Sending task {task['task_id']} to {agent_id}")
+                elif self.verbose and self.ui.view_mode:
+                    print(f"No tasks to send to {agent_id}")
             case self.net_task.SEND_METRICS:
                 # self.ui.save_metric(agent_id, f"Metric data: {packet['data']}")
                 print("TODO save metric")  # TODO

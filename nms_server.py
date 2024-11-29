@@ -14,6 +14,7 @@ from nms_server import (
     ServerPool,
     TCPServer,
     UDPServer,
+    TaskServer,
     Config
 )
 
@@ -39,12 +40,13 @@ def main():
     server_hostname = socket.gethostname()
 
     pool = ServerPool()
+    task_server = TaskServer(config)
 
     ui = ServerUI(server_hostname, pool, verbose=args.verbose)
     ui.display_title()
 
     tcp_server = TCPServer(ui)
-    udp_server = UDPServer(ui, pool, verbose=args.verbose)
+    udp_server = UDPServer(ui, pool, task_server, verbose=args.verbose)
 
     tcp_server.start()
     udp_server.start()
