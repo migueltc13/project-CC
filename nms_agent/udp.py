@@ -14,7 +14,7 @@ from protocol.exceptions.checksum_mismatch import ChecksumMismatchException
 
 
 class UDP(threading.Thread):
-    def __init__(self, agent_id, server_ip, pool, verbose=False):
+    def __init__(self, agent_id, server_ip, pool, client_task, verbose=False):
         super().__init__(daemon=True)
         self.agent_id = agent_id
         self.server_ip = server_ip
@@ -24,6 +24,7 @@ class UDP(threading.Thread):
         self.shutdown_flag = threading.Event()
         self.net_task = NetTask()
         self.pool = pool
+        self.client_task = client_task
         self.lock = threading.Lock()
         self.threads = []
         self.verbose = verbose
@@ -166,9 +167,13 @@ class UDP(threading.Thread):
         # - EOC (End of Connection): send a ACK and shutdown the agent
         eoc_received = False
         match packet["msg_type"]:
-            case self.net_task.SEND_TASK:
-                # TODO add to the task queue/list/class
-                pass
+            case self.net_task.SEND_TASKS:
+                # Add the task to the loaded tasks list
+                if self.verbose:
+                    print("Received task")
+                # Parse json data to dict
+                data = json.loads(packet["data"])
+                self.client_task.add_task(data)
             case self.net_task.EOC:
                 eoc_received = True
 
