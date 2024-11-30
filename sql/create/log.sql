@@ -10,4 +10,3 @@ CREATE TABLE IF NOT EXISTS log (
     FOREIGN KEY (alert_type) REFERENCES alert_type(id),
     FOREIGN KEY (metric_id) REFERENCES metric(id)
 );
-    
