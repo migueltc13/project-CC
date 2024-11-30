@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS alert_type (
+    id INT PRIMARY KEY,
+    designation NVARCHAR(255) NOT NULL
+);
