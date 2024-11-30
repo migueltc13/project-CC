@@ -159,10 +159,26 @@ class UDP(threading.Thread):
         if packet["msg_type"] == self.net_task.FIRST_CONNECTION:
             self.pool.add_client(agent_id, addr)
 
-        # Whenever a packet is received, the server updated the respective agent's
-        # sequence number, unless the packet is a ack or retransmission
-        if packet["flags"]["retransmission"] == 0:
-            self.pool.inc_seq_number(agent_id)
+        # send ACK
+        window_size = self.pool.get_server_window_size()
+        ack_packet = self.net_task.build_ack_packet(packet, agent_id, window_size)
+
+        with self.lock:
+            self.server_socket.sendto(ack_packet, addr)
+
+        if self.verbose and self.ui.view_mode:
+            print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
+
+        # whenever the server receives a duplicated packet,
+        # the ack is sent, but the packet is discarded
+        if self.pool.is_packet_received(agent_id, packet["seq_number"]):
+            return
+
+        # add the sequence number to the list of received packets
+        self.pool.add_packet_received(agent_id, packet["seq_number"])
+
+        # increment the sequence number
+        self.pool.inc_seq_number(agent_id)
 
         # Flux control by checking the window size
         # if the URG flag is set, send the packet immediately, regardless of the window size
@@ -173,16 +189,6 @@ class UDP(threading.Thread):
                 time.sleep(1)
                 if self.verbose and self.ui.view_mode:
                     print(f"Agent {agent_id} window size is 0. Waiting...")
-
-        # send ACK
-        window_size = self.pool.get_server_window_size()
-        ack_packet = self.net_task.build_ack_packet(packet, agent_id, window_size)
-
-        with self.lock:
-            self.server_socket.sendto(ack_packet, addr)
-
-        if self.verbose and self.ui.view_mode:
-            print(f"Sending ACK for packet {packet['seq_number']} to {agent_id}")
 
         # Packet reordering and defragmentation
         packet = self.pool.reorder_packets(agent_id, packet)

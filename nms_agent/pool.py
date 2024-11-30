@@ -7,11 +7,14 @@ class Pool:
     # Current sequence number
     # List of packets sent yet to be
     # List of packets received yet to be reordered and defragmented
+    # List of sequence numbers of packets received (for descarting duplicates)
     # Agent buffer size (window size)
+    # Server buffer size (window size)
     def __init__(self):
         self.seq_number = 1
         self.packets_to_ack = []
         self.packets_to_reorder = []
+        self.packets_received = []
         self.agent_window_size = INITIAL_WINDOW_SIZE
         self.server_window_size = INITIAL_WINDOW_SIZE
         self.lock = threading.Lock()
@@ -123,14 +126,9 @@ class Pool:
             # save the packets to remove from the list of packets to reorder
             buffered_packets = packets.copy()
 
-            # remove dupplicate packets by the sequence number
-            unique_packets = {}
-            for p in packets:
-                if p["seq_number"] not in unique_packets:
-                    unique_packets[p["seq_number"]] = p
-
             # reorder packets by sequence number
-            packets = sorted(unique_packets.values(), key=lambda x: x["seq_number"])
+            # note: duplicated packets were already removed before calling this method
+            packets = sorted(packets.values(), key=lambda x: x["seq_number"])
 
             # defragment data by concatenating the data of all packets
             packet = packets[0]
@@ -147,6 +145,19 @@ class Pool:
             self.agent_window_size += len(buffered_packets)
 
             return packet  # packet with defragmented data
+
+    ###
+    # Packets received
+    ###
+
+    def add_packet_received(self, seq_number):
+        with self.lock:
+            # Add the sequence number to the list of packets received
+            self.packets_received.append(seq_number)
+
+    def is_packet_received(self, seq_number):
+        with self.lock:
+            return seq_number in self.packets_received
 
     ###
     # Agent window size

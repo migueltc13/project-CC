@@ -131,10 +131,23 @@ class UDP(threading.Thread):
             self.pool.remove_packet_to_ack(packet["seq_number"])
             return
 
-        # whenever the agent receives a packet, increase the sequence number,
-        # unless the packet is a ack or retransmission
-        if packet["flags"]["retransmission"] == 0:
-            self.pool.inc_seq_number()
+        # send ACK
+        window_size = self.pool.get_agent_window_size()
+        ack_packet = self.net_task.build_ack_packet(packet, self.agent_id, window_size)
+
+        with self.lock:
+            self.client_socket.sendto(ack_packet, (self.server_ip, C.UDP_PORT))
+
+        # whenever the agent receives a duplicated packet,
+        # the ack is sent, but the packet is discarded
+        if self.pool.is_packet_received(packet["seq_number"]):
+            return
+
+        # Add the sequence number to the list of received packets
+        self.pool.add_packet_received(packet["seq_number"])
+
+        # Increment the sequence number
+        self.pool.inc_seq_number()
 
         # Flux control by checking the window size
         # if the URG flag is set, send the packet immediately, regardless of the window size
@@ -145,13 +158,6 @@ class UDP(threading.Thread):
                 time.sleep(1)
                 if self.verbose:
                     print("Server window size is 0. Waiting...")
-
-        # send ACK
-        window_size = self.pool.get_agent_window_size()
-        ack_packet = self.net_task.build_ack_packet(packet, self.agent_id, window_size)
-
-        with self.lock:
-            self.client_socket.sendto(ack_packet, (self.server_ip, C.UDP_PORT))
 
         # Packet reordering and defragmentation
         packet = self.pool.reorder_packets(packet)
