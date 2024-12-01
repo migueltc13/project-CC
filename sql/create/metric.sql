@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS metric (
-    id INT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     task_id INT,
     cpu_usage FLOAT,
     ram_usage FLOAT,
