@@ -119,6 +119,8 @@
 % BEGIN ESPECIFICACÕES DOS PROTOCOLOS APLICACIONAIS
 %===============================================================================
 
+\newgeometry{top=0cm}
+
 \chapter{Especificações dos Protocolos Aplicacionais}
 
 \section{\textit{AlertFlow}}
@@ -131,6 +133,7 @@
     \item Normal
 \end{itemize}
 
+\loadgeometry{default}
 \clearpage
 
 \section{\textit{NetTask}}
@@ -245,7 +248,7 @@ Uma vez que todos os fragmentos são recebidos, estes são ordenados pelo númer
 sequência e os dados da mensagem são concatenados para formar a mensagem original.
 
 O campo \textit{Message Identifier} permite que fragmentos de diferentes mensagens
-sejam distinguidos, garantindo a integridade dos pacotes recebidos.
+sejam distinguidos, garantindo a integridade dos pacotes reconstruídos.
 
 
 \clearpage
@@ -257,9 +260,8 @@ e ordenação de pacotes, recorre ao \textit{Sequence Number} da mensagem.
 O recetor mantém um registo dos números de sequência pacotes recebidos para a
 deteção de pacotes duplicados, escartando pacotes que já tenham sido recebidos anteriormente, e
 reenviando um \textit{acknowledgement} ao emissor para confirmar a receção do pacote
-de forma a evitar retransmissões desnecessárias.
+de forma a evitar futuras retransmissões desnecessárias.
 
-\textcolor{red}{NOTA TODO ainda só fazemos esta deteção para pacotes fragmentados!}
 
 \textbf{Deteção de Erros}
 
@@ -270,12 +272,15 @@ verificação calculada for diferente da recebida, o pacote é descartado, e o e
 uma vez que não recebe um \textit{acknowledgement} reenviará o pacote.
 
 
-\textbf{Conpatibilidade de Versões}
+\textbf{Compatibilidade de Versões}
 
 A compatibilidade de versões é garantida através do campo \textit{NMS NetTask Version} do cabeçalho
 da mensagem, permitindo a identificação da versão do protocolo entre o servidor e os agentes. Se a
-versão do protocolo do emissor for diferente da versão do recetor, a mensagem é descartada, evitando
-possíveis incompatibilidades e erros.
+versão do protocolo do emissor for diferente da versão do recetor, é apresentada uma mensagem de erro
+com as diferentes versões. Uma possível alteração na implementação seria descartar a mensagem, evitando
+possíveis incompatibilidades e erros, contudo, a decisão foi manter a mensagem de erro e tentar processar
+o pacote, uma vez que a diferença de versões pode não impedir uma troca sem conflitos, deste modo, não
+se sobrecarrega a largura de banda com múltiplas retransmissões de pacotes.
 
 
 \textbf{Controlo de Fluxo}
@@ -283,12 +288,18 @@ possíveis incompatibilidades e erros.
 O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
 indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
 O valor inicial da janela de receção é definido no ficheiro \texttt{constants.py} sobre a nomenclatura
-\texttt{INITIAL\_WINDOW\_SIZE}, sendo este valor de 32 pacotes. O emissor, ao enviar um pacote, ...
-
-\textcolor{red}{
-    TODO: neste momento usamos o window size no array de pacotes a ordenar/desfragmentar,
-    não deverá ser nos pacotes por receber acks? ou ambos?
-}
+\texttt{INITIAL\_WINDOW\_SIZE}, sendo este valor de 32 pacotes. O emissor, ao enviar um pacote, indica
+a sua janela de receção, sendo esta referente a quantidade de espaço disponível na sua lista de pacotes
+por desfragmentar e ordenar, uma vez que na implementação atual, é criada uma \textit{thread} para processar
+pacotes recebidos, então apenas os pacotes fragmentados são guardados em memória, servindo estes para a indicação
+do tamanho da janela de receção.
+O recetor, ao receber um pacote, se a janela de receção do emissor for zero,
+a \textit{thread} responsável por processar pacotes é colocada em espera,
+e outra thread, criada posteriormente, é responsável por enviar \textit{window probes}
+aos emissores com \textit{window sizes} iguais a zero. Uma vez que o emissor
+responder ao \textit{window probe} com a sua janela de receção superior a zero,
+a \textit{thread} responsável por processar o pacote é libertada para continuar
+a execução.
 
 \textcolor{red}{
     Neste descrição de funcionalidades, não falamos que o servidor guarda por exemplo,
@@ -319,7 +330,7 @@ O valor inicial da janela de receção é definido no ficheiro \texttt{constants
 
 \section{Parâmetros dos Executáveis}
 
-\subsection{\textit{nms\_server.py}}
+\subsection{\texttt{nms\_server.py}}
 
 \begin{lstlisting}[
     language=,
@@ -338,6 +349,8 @@ options:
                         Configuration file path
   -v, --verbose         Enable verbose output
 \end{lstlisting}
+
+\subsection{\texttt{nms\_agent.py}}
 
 \begin{lstlisting}[
     language=,
@@ -438,22 +451,22 @@ desempenho e a execução de tarefas de monitorização de forma eficiente e fi�
 % BEGIN REFERÊNCIAS
 %===============================================================================
 
-%% Change biblibography name from “Bibliografia” to “Referências”
-\renewcommand\bibname{Referências}
-
-%% https://www.overleaf.com/learn/latex/bibliography_management_with_bibtex
-\begin{thebibliography}{9}
-
-\bibitem{DatabaseSystems}
-Connolly, T., \& Begg, C. (2015). Database Systems: Example (6th ed.). Pearson Education. London, UK.
-
-% \bibitem{MySQLManual}
-% MySQL 8.0 Reference Manual (2024). \href{https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html}{MySQL 8.0 Reference Manual: Data Type Storage Requirements}. MySQL, Oracle.
-
-\end{thebibliography}
-
-%% Add bibliografia to index
-\addcontentsline{toc}{chapter}{Bibliografia}
+% %% Change biblibography name from “Bibliografia” to “Referências”
+% \renewcommand\bibname{Referências}
+%
+% %% https://www.overleaf.com/learn/latex/bibliography_management_with_bibtex
+% \begin{thebibliography}{9}
+%
+% \bibitem{DatabaseSystems}
+% Connolly, T., \& Begg, C. (2015). Database Systems: Example (6th ed.). Pearson Education. London, UK.
+%
+% % \bibitem{MySQLManual}
+% % MySQL 8.0 Reference Manual (2024). \href{https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html}{MySQL 8.0 Reference Manual: Data Type Storage Requirements}. MySQL, Oracle.
+%
+% \end{thebibliography}
+%
+% %% Add bibliografia to index
+% \addcontentsline{toc}{chapter}{Bibliografia}
 
 %===============================================================================
 % END REFERÊNCIAS
@@ -463,13 +476,13 @@ Connolly, T., \& Begg, C. (2015). Database Systems: Example (6th ed.). Pearson E
 % BEGIN ANEXOS
 %===============================================================================
 
-%% \addchap has no numbering but appears in table of contents.
-\addchap{Anexos}
-
-\addsec{
-    \href{https://google.com/}{\small [I] Exemplo de Anexo}
-    \label{anexo:1}
-}
+% %% \addchap has no numbering but appears in table of contents.
+% \addchap{Anexos}
+%
+% \addsec{
+%     \href{https://google.com/}{\small [I] Exemplo de Anexo}
+%     \label{anexo:1}
+% }
 
 %===============================================================================
 % END ANEXOS
