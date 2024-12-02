@@ -28,10 +28,9 @@ class TCP:
             print("Exiting...")
             sys.exit(1)
 
-    def send_alert(self, alert_type, data):
+    def send_alert(self, data):
         # Build the packet
-        packet = self.alert_flow.build_packet(self.alert_flow, alert_type,
-                                              self.agent_id, data)
+        packet = self.alert_flow.build_packet(self.alert_flow, self.agent_id, data)
 
         # Connect to the server
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

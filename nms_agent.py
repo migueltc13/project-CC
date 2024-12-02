@@ -43,11 +43,11 @@ def main():
     udp_client.send_first_connection()
 
     # Test metric
-    time.sleep(2)
-    udp_client.send_metrics(None)
+    # time.sleep(2)
+    # udp_client.send_metrics(None)
 
-    # Test alert (AlertFlow.CPU_USAGE = 0)
-    # tcp_client.send_alert(0, "Test CPU usage Alert")
+    # Test alert
+    tcp_client.send_alert("Test CPU usage Alert")
 
     # TODO Create execute tasks thread
     # execute_tasks_thread = threading.Thread(target=client_task.run_tasks,

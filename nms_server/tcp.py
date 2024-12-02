@@ -65,13 +65,13 @@ class TCP(threading.Thread):
 
                     try:
                         packet = self.alert_flow.parse_packet(self.alert_flow, raw_data)
+                        print(f"Received alert {packet}")
                     except (InvalidVersionException, InvalidHeaderException) as e:
                         self.ui.display_error(e)
                         break
 
-                    alert_type = self.alert_flow.parse_alert_type(self.alert_flow,
-                                                                  packet['alert_type'])
-                    self.ui.save_alert(str(packet['identifier']), alert_type, str(packet['data']))
+                    # TODO save alert
+                    # self.ui.save_alert(str(packet['identifier']), str(packet['data']))
                 except socket.timeout:
                     pass
 
