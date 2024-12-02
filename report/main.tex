@@ -371,18 +371,23 @@ de forma a garantir a terminação da conexão com sucesso.
     \label{fig:nt_ret_dup_frag_ord_error}
 \end{minipage}
 
-\begin{itemize}
-    \item\textbf{(1)} O Agente envia uma métrica, com dados superiores a 1500 bytes - \textit{header size};
-    \item\textbf{(2)} O Servidor recebe o pacote, mas como o \textit{Message Id} é diferente do \textit{Sequence Number}, deduz que
-    faltam mais fragmentos, adicionando o mesmo ao \textit{buffer} e enviando o ACK;
-    \item\textbf{(3)} O Agente remove o pacote de \textit{Sequence Number} 4 da lista de pacotes por reenviar;
-    \item\textbf{(4)} O Agente, após aguardar, envia a retransmissão do pacote não \textit{acknowledged};
-    \item\textbf{(5)} O Servidor possui todos os fragmentos, ordena e desfragmenta os mesmos, guardando a métrica. Seguidamente, envia
-    o ACK, que é perdido;
-    \item\textbf{(6)} O Agente, ao não receber o ACK, retransmite o pacote;
-    \item\textbf{(7)} O Servidor, ao receber o pacote duplicado, calcula o \textit{Checksum} e deteta a duplicação, descartando o pacote, e 
-    envia novamente o ACK.
-\end{itemize}
+\begin{enumerate}
+    \item O agente envia uma métrica, com dados superiores ao \texttt{BUFFER\_SIZE}, subtraído do \textit{header size},
+    sendo este fragmentado em dois pacotes;
+    \item O servidor recebe o pacote, e como o \textit{Message Id} é diferente do \textit{Sequence Number}, deduz que
+    faltam mais fragmentos, adicionando-o ao seu \textit{buffer} de pacotes a desfragmentar, e envia o ACK;
+    \item O agente remove o pacote de número de sequência 4 da lista de pacotes por retransmitir;
+    \item O agente, após aguardar \texttt{RETRANSMIT\_SLEEP\_TIME} segundos, retransmite o pacote não \textit{acknowledged};
+    \item O servidor possui todos os fragmentos, ordena e desfragmenta os mesmos, guardando a métrica na base de dados.
+    Seguidamente, envia o ACK, que será perdido;
+    \item O agente, ao não receber o ACK, retransmite o pacote pela segunda vez, que, pela sua rota, sofre de alterações
+    no seu conteúdo;
+    \item O servidor, ao receber o pacote, calcula o \textit{checksum} e verifica que é diferente do expectado, descartando
+    o pacote. Como tal, não envia um ACK;
+    \item O agente, ao não receber o ACK, retransmite o pacote novamente;
+    \item O servidor descarta o pacote duplicado, pois, no passo (5), já tinha guardado o número de sequência 3.
+    O servidor reenvia o ACK para evitar retransmissões desnecessárias.
+\end{enumerate}
     
 
 \textbf{Controlo de Fluxo}

@@ -4,6 +4,7 @@ from os import path
 from contextlib import contextmanager
 import mysql.connector as connector
 from mysql.connector import errors
+import threading
 
 
 # Get the directory with the database files
@@ -46,37 +47,40 @@ def get_cursor():
 # Define the database operations for initializing, inserting, and selecting logs
 # as well as printing log entries
 class operation:
+    # Database operations lock
+    db_lock = threading.Lock()
     # Initialize the database tables and populate them with data
     @staticmethod
     def init():
-        with get_cursor() as cursor:
-            if cursor is None:
-                raise RuntimeError("Failed to obtain database cursor for initialization")
+        with operation.db_lock:
+            with get_cursor() as cursor:
+                if cursor is None:
+                    raise RuntimeError("Failed to obtain database cursor for initialization")
 
-            try:
-                # Create tables "log_type", "alert_type", "metric" and "log"
-                with open(path.join(db_dir, "create/log_type.sql"), "r") as f:
-                    cursor.execute(f.read())
+                try:
+                    # Create tables "log_type", "alert_type", "metric" and "log"
+                    with open(path.join(db_dir, "create/log_type.sql"), "r") as f:
+                        cursor.execute(f.read())
 
-                with open(path.join(db_dir, "create/alert_type.sql"), "r") as f:
-                    cursor.execute(f.read())
-                
-                with open(path.join(db_dir, "create/metric.sql"), "r") as f:
-                    cursor.execute(f.read())
+                    with open(path.join(db_dir, "create/alert_type.sql"), "r") as f:
+                        cursor.execute(f.read())
+                    
+                    with open(path.join(db_dir, "create/metric.sql"), "r") as f:
+                        cursor.execute(f.read())
 
-                with open(path.join(db_dir, "create/log.sql"), "r") as f:
-                    cursor.execute(f.read())
+                    with open(path.join(db_dir, "create/log.sql"), "r") as f:
+                        cursor.execute(f.read())
 
-                # Populate table "log_type""log_type" table
-                with open(path.join(db_dir, "populate/log_type.sql"), "r") as f:
-                    cursor.execute(f.read())
-                
-                # Populate table "alert_type"
-                with open(path.join(db_dir, "populate/alert_type.sql"), "r") as f:
-                    cursor.execute(f.read())
+                    # Populate table "log_type""log_type" table
+                    with open(path.join(db_dir, "populate/log_type.sql"), "r") as f:
+                        cursor.execute(f.read())
+                    
+                    # Populate table "alert_type"
+                    with open(path.join(db_dir, "populate/alert_type.sql"), "r") as f:
+                        cursor.execute(f.read())
 
-            except (FileNotFoundError, errors.Error) as e:
-                raise RuntimeError(f"Error initializing the database: {e}")
+                except (FileNotFoundError, errors.Error) as e:
+                    raise RuntimeError(f"Error initializing the database: {e}")
 
     # Insert a log entry into the database
     @staticmethod
@@ -88,16 +92,17 @@ class operation:
         ):
             raise RuntimeError("Invalid input data type(s)")
 
-        with get_cursor() as cursor:
-            if cursor is None:
-                raise RuntimeError("Failed to obtain database cursor for insertion")
+        with operation.db_lock:
+            with get_cursor() as cursor:
+                if cursor is None:
+                    raise RuntimeError("Failed to obtain database cursor for insertion")
 
-            try:
-                with open(path.join(db_dir, "queries/insert_log.sql"), "r") as f:
-                    cursor.execute(f.read(), (log_type_id, hostname, message))
+                try:
+                    with open(path.join(db_dir, "queries/insert_log.sql"), "r") as f:
+                        cursor.execute(f.read(), (log_type_id, hostname, message))
 
-            except (FileNotFoundError, errors.Error) as e:
-                raise RuntimeError(f"Error inserting log: {e}")
+                except (FileNotFoundError, errors.Error) as e:
+                    raise RuntimeError(f"Error inserting log: {e}")
             
     # Insert an alert log entry into the database
     @staticmethod
@@ -109,16 +114,17 @@ class operation:
         ):
             raise RuntimeError("Invalid input data type(s)")
 
-        with get_cursor() as cursor:
-            if cursor is None:
-                raise RuntimeError("Failed to obtain database cursor for insertion")
+        with operation.db_lock:
+            with get_cursor() as cursor:
+                if cursor is None:
+                    raise RuntimeError("Failed to obtain database cursor for insertion")
 
-            try:
-                with open(path.join(db_dir, "queries/insert_alert.sql"), "r") as f:
-                    cursor.execute(f.read(), (hostname, alert_type_id, message))
+                try:
+                    with open(path.join(db_dir, "queries/insert_alert.sql"), "r") as f:
+                        cursor.execute(f.read(), (hostname, alert_type_id, message))
 
-            except (FileNotFoundError, errors.Error) as e:
-                raise RuntimeError(f"Error inserting alert log: {e}")
+                except (FileNotFoundError, errors.Error) as e:
+                    raise RuntimeError(f"Error inserting alert log: {e}")
     
     # Insert a metric log entry into the database
     @staticmethod
@@ -134,21 +140,22 @@ class operation:
         latency = metrics.get('latency')
         message = None
 
-        with get_cursor() as cursor:
-            if cursor is None:
-                print("Failed to obtain database cursor for insertion")
-                return
+        with operation.db_lock:
+            with get_cursor() as cursor:
+                if cursor is None:
+                    print("Failed to obtain database cursor for insertion")
+                    return
 
-            try:
-                # Insert into the "metric" table
-                with open(path.join(db_dir, "queries/insert_metric.sql"), "r") as f:
-                    cursor.execute(
-                        f.read(),
-                        (cpu_usage, ram_usage, interface_stats, bandwidth, jitter, packet_loss, latency, hostname, message)
-                    )
+                try:
+                    # Insert into the "metric" table
+                    with open(path.join(db_dir, "queries/insert_metric.sql"), "r") as f:
+                        cursor.execute(
+                            f.read(),
+                            (cpu_usage, ram_usage, interface_stats, bandwidth, jitter, packet_loss, latency, hostname, message)
+                        )
 
-            except (FileNotFoundError, errors.Error) as e:
-                print(f"Error inserting metric log: {e}")
+                except (FileNotFoundError, errors.Error) as e:
+                    print(f"Error inserting metric log: {e}")
 
 
     # Select log entries with an optional limit
@@ -159,17 +166,18 @@ class operation:
 
         query_limit = "LIMIT %s" % limit if limit > 0 else ""
 
-        with get_cursor() as cursor:
-            if cursor is None:
-                raise RuntimeError("Failed to obtain database cursor for selection")
-            try:
-                with open(path.join(db_dir, "queries/select_log.sql"), "r") as file:
-                    query = file.read().replace("{LIMIT}", query_limit)
-                    cursor.execute(query)
-                    result = cursor.fetchall()
-                    return result
-            except (FileNotFoundError, errors.Error) as e:
-                raise RuntimeError(f"Error selecting logs: {e}")
+        with operation.db_lock:
+            with get_cursor() as cursor:
+                if cursor is None:
+                    raise RuntimeError("Failed to obtain database cursor for selection")
+                try:
+                    with open(path.join(db_dir, "queries/select_log.sql"), "r") as file:
+                        query = file.read().replace("{LIMIT}", query_limit)
+                        cursor.execute(query)
+                        result = cursor.fetchall()
+                        return result
+                except (FileNotFoundError, errors.Error) as e:
+                    raise RuntimeError(f"Error selecting logs: {e}")
     
     # Select alert log entries with an optional limit
     @staticmethod
@@ -179,17 +187,18 @@ class operation:
 
         query_limit = "LIMIT %s" % limit if limit > 0 else ""
 
-        with get_cursor() as cursor:
-            if cursor is None:
-                raise RuntimeError("Failed to obtain database cursor for selection")
-            try:
-                with open(path.join(db_dir, "queries/select_alert.sql"), "r") as file:
-                    query = file.read().replace("{LIMIT}", query_limit)
-                    cursor.execute(query)
-                    result = cursor.fetchall()
-                    return result
-            except (FileNotFoundError, errors.Error) as e:
-                raise RuntimeError(f"Error selecting logs: {e}")
+        with operation.db_lock:
+            with get_cursor() as cursor:
+                if cursor is None:
+                    raise RuntimeError("Failed to obtain database cursor for selection")
+                try:
+                    with open(path.join(db_dir, "queries/select_alert.sql"), "r") as file:
+                        query = file.read().replace("{LIMIT}", query_limit)
+                        cursor.execute(query)
+                        result = cursor.fetchall()
+                        return result
+                except (FileNotFoundError, errors.Error) as e:
+                    raise RuntimeError(f"Error selecting logs: {e}")
     
     # Select metric log entries with an optional limit
     @staticmethod
@@ -199,17 +208,18 @@ class operation:
 
         query_limit = "LIMIT %s" % limit if limit > 0 else ""
 
-        with get_cursor() as cursor:
-            if cursor is None:
-                raise RuntimeError("Failed to obtain database cursor for selection")
-            try:
-                with open(path.join(db_dir, "queries/select_metric.sql"), "r") as file:
-                    query = file.read().replace("{LIMIT}", query_limit)
-                    cursor.execute(query)
-                    result = cursor.fetchall()
-                    return result
-            except (FileNotFoundError, errors.Error) as e:
-                raise RuntimeError(f"Error selecting logs: {e}")
+        with operation.db_lock:
+            with get_cursor() as cursor:
+                if cursor is None:
+                    raise RuntimeError("Failed to obtain database cursor for selection")
+                try:
+                    with open(path.join(db_dir, "queries/select_metric.sql"), "r") as file:
+                        query = file.read().replace("{LIMIT}", query_limit)
+                        cursor.execute(query)
+                        result = cursor.fetchall()
+                        return result
+                except (FileNotFoundError, errors.Error) as e:
+                    raise RuntimeError(f"Error selecting logs: {e}")
 
     # Print a log entry
     @staticmethod
