@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS log (
     type INT NOT NULL,
     timestamp DATETIME NOT NULL,
     hostname NVARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
+    message TEXT,
     alert_type INT,
     metric_id INT,
     FOREIGN KEY (type) REFERENCES log_type(id),
