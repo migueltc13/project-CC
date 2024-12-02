@@ -364,6 +364,27 @@ de forma a garantir a terminação da conexão com sucesso.
 
 \textbf{Retransmissão, Manuseamento de Pacotes Duplicados, Desfragmentação, Ordenação e Deteção de Erros}
 
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=0.5\textwidth]{img/sequence_diagrams/ret_dup_frag_ord_error.png}
+    \captionof{figure}{Diagrama de sequência do protocolo \textit{NetTask} - Retransmissão, Manuseamento de Pacotes Duplicados, Desfragmentação, Ordenação e Deteção de Erros}
+    \label{fig:nt_ret_dup_frag_ord_error}
+\end{minipage}
+
+\begin{itemize}
+    \item\textbf{(1)} O Agente envia uma métrica, com dados superiores a 1500 bytes - \textit{header size};
+    \item\textbf{(2)} O Servidor recebe o pacote, mas como o \textit{Message Id} é diferente do \textit{Sequence Number}, deduz que
+    faltam mais fragmentos, adicionando o mesmo ao \textit{buffer} e enviando o ACK;
+    \item\textbf{(3)} O Agente remove o pacote de \textit{Sequence Number} 4 da lista de pacotes por reenviar;
+    \item\textbf{(4)} O Agente, após aguardar, envia a retransmissão do pacote não \textit{acknowledged};
+    \item\textbf{(5)} O Servidor possui todos os fragmentos, ordena e desfragmenta os mesmos, guardando a métrica. Seguidamente, envia
+    o ACK, que é perdido;
+    \item\textbf{(6)} O Agente, ao não receber o ACK, retransmite o pacote;
+    \item\textbf{(7)} O Servidor, ao receber o pacote duplicado, calcula o \textit{Checksum} e deteta a duplicação, descartando o pacote, e 
+    envia novamente o ACK.
+\end{itemize}
+    
+
 \textbf{Controlo de Fluxo}
 
 %===============================================================================
