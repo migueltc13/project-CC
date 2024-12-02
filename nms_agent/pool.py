@@ -128,7 +128,7 @@ class Pool:
 
             # reorder packets by sequence number
             # note: duplicated packets were already removed before calling this method
-            packets = sorted(packets.values(), key=lambda x: x["seq_number"])
+            packets = sorted(packets, key=lambda x: x["seq_number"])
 
             # defragment data by concatenating the data of all packets
             packet = packets[0]
