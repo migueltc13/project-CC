@@ -125,13 +125,41 @@
 
 \section{\textit{AlertFlow}}
 
-\subsection{Formato de Mensagem}
+O protocolo \textit{AlertFlow}, operado sobre o TCP, foi desenvolvido para a
+comunicação de alertas de
+agentes para o servidor, sendo assim utilizado monodirecionalmente. O envio de
+alertas ocorre quando certas condições de monitorização definidas são excedidas,
+sendo estas previamente indicadas pelo servidor, via o protocolo \textit{NetTask}.
+Este protocolo é orientado à conexão, ou seja cada vez que um agente envia um alerta,
+é estabelecida uma nova conexão TCP com o servidor, sendo esta terminada após o envio
+da mesma.
 
-\subsection{Diagrama de Sequência}
+\subsection{Formato de Cabecalho e Descrição de Campos}
+
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/alertflow_header.png}
+    \captionof{figure}{Formato do cabeçalho do protocolo \textit{AlertFlow}}
+    \label{fig:alertflow_message_format}
+\end{minipage}
 
 \begin{itemize}
-    \item Normal
+    \item \textbf{\textit{NMS AlertFlow Version}} (1 \textit{byte}): versão do protocolo,
+        para assegurar a compatibilidade de versões entre o servidor e os agentes;
+    \item \textbf{\textit{Data/Payload}} (n \textit{bytes}): carga útil da mensagem com
+        tamanho variável. Utiliza a encodificação \textit{UTF-8}, com um formato JSON
+        para a transmissão de dados.
 \end{itemize}
+
+\subsection{Descrição de Funcionalidades}
+
+\textbf{Compatibilidade de Versões}
+
+A compatibilidade de versões é garantida através do campo \textit{NMS AlertFlow Version}
+do cabeçalho da mensagem, permitindo a identificação da versão do protocolo entre o
+servidor e os agentes. Se a versão do protocolo do emissor for diferente da versão do
+recetor, é apresentada uma mensagem de erro com as diferentes versões. Esta é meramente
+indicativa à qual o formato usado nos dados da mensagem.
 
 \loadgeometry{default}
 \clearpage
@@ -142,12 +170,13 @@ O protocolo \textit{NetTask} é essencial para a funcionalidade harmonizada do
 \textbf{\textit{Network Monitoring System}}, sendo este usado para a maioria
 das comunicações entre o servidor e os agentes, tais como, a primeira conexão de
 um agente ao servidor, o envio de tarefas pelo servidor, o envio de resultados
-de tarefas pelos agentes, e a terminação de conexões nos dois sentidos.
+de tarefas pelos agentes, e a terminação de conexões nos dois sentidos, sendo
+um protocolo orientado aos datagramas.
 
-Deste modo, o protocolo \textit{NetTask} foi desenvolvido para ser robusto e
-adaptável a condições adversas de rede, garantindo a entrega fiável e integral
-de mensagens, sobretudo em rotas deterioradas, com perdas ou duplicação de pacotes,
-latências elevadas e taxas de débito variáveis.
+Como este opera em cima da camada de transporte UDP, o protocolo \textit{NetTask}
+foi desenvolvido para ser robusto e adaptável a condições adversas de rede,
+garantindo a entrega fiável e integral de mensagens, sobretudo em rotas deterioradas,
+com perdas ou duplicação de pacotes, latências elevadas e taxas de débito variáveis.
 
 Para combater tais adversidades, o protocolo aplicacional \textit{NetTask}
 responsabiliza-se pelas funcionalidades que serão exploradas no seguinte
@@ -201,7 +230,8 @@ comportamento do protocolo em situações normais e adversas.
         podendo este ser recetor ou emissor da mensagem;
     \item \textbf{\textit{Data/Payload}}       (n \textit{bytes}): carga útil da mensagem com
         tamanho variável, contendo a informação a ser transmitida nas mensagens do tipo
-        \textit{Send Tasks} e \textit{Send Metrics}.
+        \textit{Send Tasks} e \textit{Send Metrics}. Utiliza a encodificação \textit{UTF-8},
+        com um formato JSON para a transmissão de dados.
 \end{itemize}
 
 \clearpage
@@ -258,7 +288,7 @@ sejam distinguidos, garantindo a integridade dos pacotes reconstruídos.
 A deteção e manuseamento de pacotes duplicados, tal como na (des)fragmentação
 e ordenação de pacotes, recorre ao \textit{Sequence Number} da mensagem.
 O recetor mantém um registo dos números de sequência pacotes recebidos para a
-deteção de pacotes duplicados, escartando pacotes que já tenham sido recebidos anteriormente, e
+deteção de pacotes duplicados, descartando pacotes que já tenham sido recebidos anteriormente, e
 reenviando um \textit{acknowledgement} ao emissor para confirmar a receção do pacote
 de forma a evitar futuras retransmissões desnecessárias.
 
@@ -289,7 +319,7 @@ O controlo de fluxo é efetuado através do tamanho da janela de receção (\tex
 indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
 O valor inicial da janela de receção é definido no ficheiro \texttt{constants.py} sobre a nomenclatura
 \texttt{INITIAL\_WINDOW\_SIZE}, sendo este valor de 32 pacotes. O emissor, ao enviar um pacote, indica
-a sua janela de receção, sendo esta referente a quantidade de espaço disponível na sua lista de pacotes
+a sua janela de receção, sendo esta referente à quantidade de espaço disponível na sua lista de pacotes
 por desfragmentar e ordenar, uma vez que na implementação atual, é criada uma \textit{thread} para processar
 pacotes recebidos, então apenas os pacotes fragmentados são guardados em memória, servindo estes para a indicação
 do tamanho da janela de receção.
@@ -301,22 +331,40 @@ responder ao \textit{window probe} com a sua janela de receção superior a zero
 a \textit{thread} responsável por processar o pacote é libertada para continuar
 a execução.
 
-\textcolor{red}{
-    Neste descrição de funcionalidades, não falamos que o servidor guarda por exemplo,
-    pacotes por ordenar/desfragmentar, num dicionário para cada agente, devemos referir?
-}
-
 \subsection{Diagramas de Sequência}
 
-\begin{itemize}
-    \item First Connection
-    \item End of Connection
-    \item Retransmission
-    \item Desfragmentação e Ordenação de pacotes
-    \item Deteção e Manuseamento de Pacotes Duplicados
-    \item Deteção de Erros
-    \item Controlo de Fluxo
-\end{itemize}
+\textbf{\textit{First Connection}}
+
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=0.7\textwidth]{img/sequence_diagrams/first_connection.png}
+    \captionof{figure}{Diagrama de sequência do protocolo \textit{NetTask} - \textit{First Connection}}
+    \label{fig:nt_first_connection}
+\end{minipage}
+
+\vspace{1cm}
+
+\textbf{\textit{End of Connection (EOC)}}
+
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sequence_diagrams/end_of_connection.png}
+    \captionof{figure}{Diagrama de sequência do protocolo \textit{NetTask} - \textit{End of Connection}}
+    \label{fig:nt_end_of_connection}
+\end{minipage}
+
+Neste exemplo, o servidor é interrompido, sendo enviado um pacote \textit{EOC} para
+todos os agentes, terminando todas as execuções. O mesmo pode ser feito quando um agente
+é interrompido, sendo enviado um pacote \textit{EOC} para o servidor, e este remove
+o agente da lista de agentes conectados.
+
+Note que, em rotas deterioradas, a mensagem de \textit{End of Connection} pode não ser recebida,
+então é necessário determinar um tempo para \textit{timeout} adequado as condições da rede,
+de forma a garantir a terminação da conexão com sucesso.
+
+\textbf{Retransmissão, Manuseamento de Pacotes Duplicados, Desfragmentação, Ordenação e Deteção de Erros}
+
+\textbf{Controlo de Fluxo}
 
 %===============================================================================
 % END PROTOCOLOS APLICACIONAIS
@@ -382,6 +430,11 @@ options:
 
 \section{\textcolor{red}{Detalhes Técnicos? Maybe}}
 
+\textcolor{red}{
+    Neste descrição de funcionalidades, não falamos que o servidor guarda por exemplo,
+    pacotes por ordenar/desfragmentar, num dicionário para cada agente, devemos referir?
+}
+
 %===============================================================================
 % END IMPLEMENTAÇÃO
 %===============================================================================
@@ -394,7 +447,8 @@ options:
 
 \textcolor{red}{
     As demonstrações para situcoes normais e adversas, contam para este capítulo?
-    Ou teremos de fazer testes mais específicos?
+    Ou teremos de fazer testes mais específicos? \\
+    Checksum, pacotes duplicados, retransmissão, defrag, controlo de fluxo, compatibilidade de versões...
 }
 
 \textcolor{red}{
