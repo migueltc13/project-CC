@@ -3,8 +3,7 @@
         {
             "task_id": 1,
             "agent_id": "acer",
-            "frequency": 20,
-            "TODO": "iperf can be run multiple times in a single task, handle this.",
+            "frequency": 5,
             "tools_params": {
                 "iperf": {
                     "is_client": true,
@@ -20,7 +19,7 @@
             "device_metrics": {
                 "cpu_usage": true,
                 "ram_usage": true,
-                "interface_stats": ["eth0", "eth1", "eth2"]
+                "interface_stats": ["wlp2s0", "eth1", "eth2"]
             },
             "link_metrics": {
                 "bandwidth": {
@@ -42,7 +41,7 @@
                 "ram_usage": 0.9,
                 "interface_stats": {
                     "threshold": 2000,
-                    "interfaces": ["eth0", "eth1"]
+                    "interfaces": ["wlp2s0", "eth1"]
                 },
                 "packet_loss": 5,
                 "jitter": 100
