@@ -37,34 +37,27 @@ def main():
     tcp_client = ClientTCP(agent_id, server_ip)
     udp_client = ClientUDP(agent_id, server_ip, pool, client_task, verbose=args.verbose)
 
+    client_task.set_client_tcp(tcp_client)
+    client_task.set_client_udp(udp_client)
+
     udp_client.start()
 
     # First connection to the server
     udp_client.send_first_connection()
 
-    # Test metric
-    # time.sleep(2)
-    # udp_client.send_metrics(None)
-
     # Test alert
-    tcp_client.send_alert("Test CPU usage Alert")
+    # tcp_client.send_alert("Test CPU usage Alert")
 
-    # TODO Create execute tasks thread
-    # execute_tasks_thread = threading.Thread(target=client_task.run_tasks,
-    #                                         daemon=True)
+    # Start the task executer thread
+    client_task.start()
 
     try:
         # Loop to keep the main thread running
         while udp_client.shutdown_flag.is_set() is False:
             if len(client_task.loaded_tasks) == 0:
+                print("No tasks loaded. Waiting...")
                 time.sleep(1)
                 continue
-            print(f"Loaded tasks: {client_task.loaded_tasks}")
-            client_task.run_tasks()
-            print(f"Task results: {client_task.tasks_results}")
-            # TODO remove this: reset task results
-            client_task.tasks_results = dict()
-            # print(f"Empty task results: {client_task.tasks_results}")
     except KeyboardInterrupt:
         print("Agent interrupted. Shutting down...")
     finally:
@@ -76,11 +69,17 @@ def main():
                time.time() - start_time < EOC_ACK_TIMEOUT):
             if args.verbose:
                 print(f"Nr of packs to be acknowledged: {pool.get_nr_packets_to_ack()}")
-                print(f"Packet(s) to be acknowledged: {pool.packets_to_ack}")
+                # print(f"Packet(s) to be acknowledged: {pool.packets_to_ack}")
                 print(f"Time elapsed: {time.time() - start_time}")
             time.sleep(1)
 
+        # Shutdown the task executer
+        print("Shutting down the task executer...")
+        client_task.shutdown()
+        client_task.join()
+
         # Shutdown the clients and await until the threads finish
+        print("Shutting down the udp and tcp clients...")
         udp_client.shutdown()
         tcp_client.shutdown()
         udp_client.join()

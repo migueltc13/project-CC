@@ -37,6 +37,8 @@ class Pool:
             if client not in self.packets_to_reorder:
                 self.packets_to_reorder[client] = []
 
+            self.packets_received[client] = []
+
             self.agents_window_sizes[client] = INITIAL_WINDOW_SIZE
 
     def remove_client(self, client):
@@ -47,6 +49,7 @@ class Pool:
             del self.seq_numbers[client]
             del self.packets_to_ack[client]
             del self.packets_to_reorder[client]
+            del self.packets_received[client]
             del self.agents_window_sizes[client]
 
     def get_connected_clients(self):

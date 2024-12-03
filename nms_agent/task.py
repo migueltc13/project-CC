@@ -1,17 +1,31 @@
 from .task_tools import (link, device)
 from protocol.alert_flow import AlertFlow
 
+import threading
 import time
+import json
 
 
 # The agent Task class is responsible for:
 # - Running the tasks for the agent based on the tasks received from the server.
 # - Parsing the results of the tasks and sending them back to the server.
 # - Sending alerts if the alert conditions are met.
-class Task:
+class Task(threading.Thread):
     def __init__(self):
+        super().__init__(daemon=False)
         self.loaded_tasks = []
-        self.tasks_results = dict()
+        self.client_udp = None
+        self.client_tcp = None
+        self.shutdown_flag = threading.Event()
+
+    def set_client_udp(self, client_udp):
+        self.client_udp = client_udp
+
+    def set_client_tcp(self, client_tcp):
+        self.client_tcp = client_tcp
+
+    def shutdown(self):
+        self.shutdown_flag.set()
 
     # Adds a task to the list of loaded tasks
     # If the task id is already in the list, the task is replaced
@@ -24,59 +38,107 @@ class Task:
 
         self.loaded_tasks.append(task)
 
-    def run_tasks(self):
-        for task in self.loaded_tasks:
-            # Sleep for the task interval
-            frequency = task["frequency"]
-            time.sleep(frequency)
-            # Initialize the result
-            self.tasks_results[task["task_id"]] = dict()
+    def run(self):
+        while self.shutdown_flag.is_set() is False:
+            # Sleep for one second when no tasks are loaded
+            # This way we save CPU cycles
+            if len(self.loaded_tasks) == 0:
+                time.sleep(1)
+                continue
+            else:
+                # TODO intialize a thread for each task
+                for task in self.loaded_tasks:
+                    metrics, alerts = self.run_task(task)
+                    print(f"Task alerts: {alerts}")
+                    print(f"Task metrics: {metrics}")
 
-            # Device metrics
-            device_metrics = task["device_metrics"]
-            if device_metrics:
-                metrics = {}
-                if device_metrics["cpu_usage"]:
-                    metrics["cpu_usage"] = device.get_cpu_usage()
-                if device_metrics["ram_usage"]:
-                    metrics["ram_usage"] = device.get_ram_usage()
-                if device_metrics["interface_stats"]:
-                    interfaces = device_metrics["interface_stats"]
-                    metrics["interface_stats"] = device.get_network_usage(interfaces)
+                    # Send the task metrics and alerts to the server
+                    # self.client_udp.send_metric(metrics)
+                    self.client_udp.send_metric(json.dumps(metrics))
+                    self.client_tcp.send_alert(json.dumps(alerts))
 
-                self.tasks_results[task["task_id"]]["device_metrics"] = metrics
+                    # Sleep for the task interval
+                    frequency = task["frequency"]
+                    time.sleep(frequency)
 
-            # TODO Link metrics
+    def run_task(self, task):
+        metrics = dict()
+        alerts  = dict()
 
-            # Alert conditions
-            # NOTE if the conditions are not calculated before,
-            # the alerts will never be triggered
-            alert_conditions = task["alertflow_conditions"]
-            if alert_conditions:
-                alerts = []
-                if alert_conditions["cpu_usage"]:
+        # Device metrics
+        device_metrics = task["device_metrics"]
+        if device_metrics:
+            if device_metrics["cpu_usage"]:
+                metrics["cpu_usage"] = device.get_cpu_usage()
+            if device_metrics["ram_usage"]:
+                metrics["ram_usage"] = device.get_ram_usage()
+            if device_metrics["interface_stats"]:
+                interfaces = device_metrics["interface_stats"]
+                metrics["interface_stats"] = device.get_network_usage(interfaces)
+
+        # TODO Link metrics
+        # bandwith
+        # jitter
+        # packet loss
+        # latency
+
+        # Alert conditions
+        alert_conditions = task["alertflow_conditions"]
+        if alert_conditions:
+            # CPU usage
+            if alert_conditions["cpu_usage"]:
+                # Calculate the CPU usage if it's not in the metrics
+                if "cpu_usage" not in metrics:
+                    cpu_usage = device.get_cpu_usage()
+                else:
                     cpu_usage = metrics["cpu_usage"]
-                    print(f"CPU usage: {cpu_usage}")
-                    print(f"Alert condition: {alert_conditions['cpu_usage']}")
-                    if cpu_usage and cpu_usage >= alert_conditions["cpu_usage"]:
-                        alerts.append(AlertFlow.CPU_USAGE)
 
-                if alert_conditions["ram_usage"]:
+                # Determine if the CPU usage is above the threshold
+                if cpu_usage and cpu_usage >= alert_conditions["cpu_usage"]:
+                    alerts[AlertFlow.CPU_USAGE] = {
+                        "cpu_usage": cpu_usage,
+                        "alert_condition": alert_conditions["cpu_usage"]
+                    }
+
+            # RAM usage
+            if alert_conditions["ram_usage"]:
+                # Calculate the RAM usage if it's not in the metrics
+                if "ram_usage" not in metrics:
+                    ram_usage = device.get_ram_usage()
+                else:
                     ram_usage = metrics["ram_usage"]
-                    if ram_usage and ram_usage >= alert_conditions["ram_usage"]:
-                        alerts.append(AlertFlow.RAM_USAGE)
 
-                if alert_conditions["interface_stats"]:
-                    for interface, stats in metrics["interface_stats"].items():
-                        if stats >= alert_conditions["interface_stats"]:
-                            alerts.append(AlertFlow.INTERFACE_STATS)
+                # Determine if the RAM usage is above the threshold
+                if ram_usage and ram_usage >= alert_conditions["ram_usage"]:
+                    alerts[AlertFlow.RAM_USAGE] = {
+                        "ram_usage": ram_usage,
+                        "alert_condition": alert_conditions["ram_usage"]
+                    }
 
-                # TODO Packet loss
+            # Interface stats
+            if alert_conditions["interface_stats"]:
+                # Calculate the interface stats if it's not in the metrics
+                # only for interfaces defined in the alert conditions
+                if "interface_stats" not in metrics:
+                    interfaces = alert_conditions["interface_stats"]["interfaces"]
+                    interface_stats = device.get_network_usage(interfaces)
+                else:
+                    interface_stats = metrics["interface_stats"]
 
-                # TODO Jitter
+                # Initialize the alerts for the interface stats
+                alerts[AlertFlow.INTERFACE_STATS] = []
 
-                self.tasks_results[task["task_id"]]["alerts"] = alerts
+                # Determine if the interface stats are above the threshold for each interface
+                for interface, stats in interface_stats.items():
+                    if stats >= alert_conditions["interface_stats"]["threshold"]:
+                        alerts[AlertFlow.INTERFACE_STATS].append({
+                            "interface": interface,
+                            "interface_stats": stats,
+                            "alert_condition": alert_conditions["interface_stats"]["threshold"]
+                        })
 
-    # def send_result(self, task_id, result):
-    #     # TODO Send the result back to the server
-    #     pass
+            # TODO Packet loss
+
+            # TODO Jitter
+
+        return metrics, alerts

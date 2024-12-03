@@ -215,9 +215,7 @@ class UDP(threading.Thread):
 
         self.send(data, flags, msg_type)
 
-    def send_metrics(self, metrics):
-        # TODO remove this to use the real metric
-        metrics = "A" * 1449 + "B" + "C" * 1449 + "D"
+    def send_metric(self, metrics):
         flags = {}
         msg_type = self.net_task.SEND_METRICS
 

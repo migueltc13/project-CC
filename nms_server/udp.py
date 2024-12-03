@@ -207,9 +207,6 @@ class UDP(threading.Thread):
         eoc_received = False
         match packet["msg_type"]:
             case self.net_task.FIRST_CONNECTION:
-                # Defragmentation test
-                # self.send("A" * 3000, {}, self.net_task.UNDEFINED, agent_id, addr)
-
                 # Send tasks to the agent
                 tasks = self.task_server.get_agent_tasks(agent_id)
                 if tasks:
@@ -224,6 +221,9 @@ class UDP(threading.Thread):
                 print("TODO save metric")  # TODO
             case self.net_task.EOC:
                 eoc_received = True
+
+        # Defragmentation test
+        # self.send("A" * 3000, {}, self.net_task.UNDEFINED, agent_id, addr)
 
         if eoc_received:
             self.pool.remove_client(agent_id)
