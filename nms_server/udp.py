@@ -103,7 +103,7 @@ class UDP(threading.Thread):
             for agent_id in agents:
                 addr = agents[agent_id]
                 window_size = self.pool.get_client_window_size(agent_id)
-                if window_size == 0:
+                if window_size <= 0:
                     self.send("", {"urgent": 1, "window_probe": 1},
                               self.net_task.UNDEFINED, agent_id, addr)
 

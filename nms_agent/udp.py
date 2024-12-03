@@ -81,7 +81,7 @@ class UDP(threading.Thread):
 
             # Get the window size of the server
             window_size = self.pool.get_server_window_size()
-            if window_size == 0:
+            if window_size <= 0:
                 self.send("", {"urgent": 1, "window_probe": 1},
                           self.net_task.UNDEFINED)
 
