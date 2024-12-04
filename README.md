@@ -10,10 +10,11 @@
 
 - [x] server sends identifier of agent instead of its own
 - [x] *Pool* de agentes conectados, pacotes por processar e pacotes por enviar
-- [ ] *Parsing* de tarefas pelos agentes
-- [ ] Execução e envio dos resultados (métricas e alertas) das tarefas
+- [x] *Parsing* de tarefas pelos agentes
+- [x] Execução e envio dos resultados (métricas e alertas) das tarefas
+- [ ] Execução de métricas pelos agentes
 - [ ] *Parsing* dos resultados pelo servidor
-- [ ] Adicionar tabelas de base de dados para armazenar métricas
+- [x] Adicionar tabelas de base de dados para armazenar métricas
 - [x] Adicionar tabelas de base de dados para armazenar alertas (+/-)
 
 #### NetTask
@@ -27,16 +28,8 @@
 - [ ] Controlo de fluxo através do *window size* e *urgent flag*
 - [x] Implementar *timeout* para retransmissão de pacotes
 - [x] Adicionar *message id field* para desfragmentação/ordenação de pacotes
-- [ ] EOC (End of Connection) packet and logic
-- [ ] Determinar o uso do campo *packet size* (pouco, uma vez que UDP é orientado a datagramas)
-
-#### AlertFlow
-
-- [ ] Estrutura do *header*
-- [x] Verificar versão do NMS
-- [x] Verificar se é preciso implementar fragmentação de pacotes. Não é necessário, pois os alertas são pequenos.
-- [x] Tornar AlertFlow *connection-oriented*: uma conexão por alerta(s) de um agente
-- [ ] Determinar o uso do campo *packet size* (pouco, se tomarmos uma abordagem *connection-oriented*)
+- [x] EOC (End of Connection) packet and logic
+- [x] Determinar o uso do campo *packet size* (pouco, uma vez que UDP é orientado a datagramas)
 
 ## Protocolos Aplicacionais
 
@@ -46,7 +39,7 @@
 
 ### *AlertFlow* (TCP)
 
-**TODO add AlertFlow header image**
+![AlertFlow Header](report/img/alertflow_header.png)
 
 Types of Alerts:
 - CPU Usage
@@ -54,16 +47,6 @@ Types of Alerts:
 - Interface Stats
 - Packet Loss
 - Jitter
-
-### Q&A
-
-***Q*: How does TCP handle flow control?**
-
-*A*: TCP uses a sliding window mechanism to handle flow control.
-The receiver advertises a window size to the sender.
-The sender will only send packets up to the window size.
-If the window size is 0, the sender will stop sending packets, until
-the receiver advertises a window size greater than 0.
 
 ### Libraries
 
