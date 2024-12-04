@@ -401,19 +401,13 @@ de forma a garantir a terminação da conexão com sucesso.
     \label{fig:nt_flux_control}
 \end{minipage}
 
-\begin{enumerate}
-    \item O agente envia um pacote de grande porte, que tem que ser fragmentado e enviado em três pacotes distintos.
-    Entretanto, a \textit{window size} encontra-se inicialmente a dois;
-    \item O servidor, ao receber os pacotes, encarrega-se de enviar os respetivos ACKs, atualizando a \textit{window size},
-    até que, no terceiro pacote, ela encontra-se a -1;
-    \item O agente necessitava enviar mais um pacote, porém, a \textit{window size} é inferior a zero, então sabe que o servidor
-    tem o \textit{buffer} cheio, pelo que envia um \textit{window probe} para verificar a \textit{window size} do servidor;
-    \item O servidor, ao receber o \textit{window probe}, responde com a sua \textit{window size}, que ainda é zero;
-    \item O agente aguarda e volta a enviar mais um \textit{window probe};
-    \item O servidor, ao receber o novo \textit{window probe}, responde com a sua \textit{window size} atualizada, que, como agora é
-    dois, permite ao agente enviar o pacote em falta;
-    \item O agente envia finalmente o pacote, e o servidor, ao receber, envia o ACK, atualizando a \textit{window size} para 1.
-\end{enumerate}
+O agente pretende enviar dois pacotes, sendo o primeiro de grande porte, num curto espaço de tempo. Este primeiro tem que ser
+fragmentado e enviado em três pacotes distintos \textbf{(1)}. Entretanto, a \textit{window size} encontra-se a dois.
+O servidor, ao receber os pacotes, encarrega-se de enviar os respetivos ACKs, atualizando a sua \textit{window size}, até que, no terceiro
+pacote, ela encontra-se a -1 \textbf{(2)}. O agente necessitava enviar mais um pacote, porém, a \textit{window size} é inferior a zero,
+então sabe que o servidor tem o \textit{buffer} cheio, pelo que envia \textit{window probes} \textbf{(3)} para o servidor
+até este lhe indicar que a sua \textit{window size} voltou a ser superior a zero \textbf{(4)}. Posto isto, o agente pode finalmente enviar
+o pacote em falta \textbf{(5)}.
 
 
 %===============================================================================
