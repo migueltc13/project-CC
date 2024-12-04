@@ -368,7 +368,7 @@ de forma a garantir a terminação da conexão com sucesso.
 
 \begin{minipage}{\textwidth}
     \centering
-    \includegraphics[width=0.5\textwidth]{img/sequence_diagrams/ret_dup_frag_ord_error.png}
+    \includegraphics[width=0.45\textwidth]{img/sequence_diagrams/ret_dup_frag_ord_error.png}
     \captionof{figure}{Diagrama de sequência do protocolo \textit{NetTask} - Retransmissão, Manuseamento de Pacotes Duplicados, Desfragmentação, Ordenação e Deteção de Erros}
     \label{fig:nt_ret_dup_frag_ord_error}
 \end{minipage}
@@ -394,10 +394,27 @@ de forma a garantir a terminação da conexão com sucesso.
 
 \textbf{Controlo de Fluxo}
 
-\textcolor{red}{
-    TODO \\
-    Diagrama de sequência do controlo de fluxo
-}
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=0.4\textwidth]{img/sequence_diagrams/flux_control.png}
+    \captionof{figure}{Diagrama de sequência do protocolo \textit{NetTask} - Controlo de Fluxo}
+    \label{fig:nt_flux_control}
+\end{minipage}
+
+\begin{enumerate}
+    \item O agente envia um pacote de grande porte, que tem que ser fragmentado e enviado em três pacotes distintos.
+    Entretanto, a \textit{window size} encontra-se inicialmente a dois;
+    \item O servidor, ao receber os pacotes, encarrega-se de enviar os respetivos ACKs, atualizando a \textit{window size},
+    até que, no terceiro pacote, ela encontra-se a -1;
+    \item O agente necessitava enviar mais um pacote, porém, a \textit{window size} é inferior a zero, então sabe que o servidor
+    tem o \textit{buffer} cheio, pelo que envia um \textit{window probe} para verificar a \textit{window size} do servidor;
+    \item O servidor, ao receber o \textit{window probe}, responde com a sua \textit{window size}, que ainda é zero;
+    \item O agente aguarda e volta a enviar mais um \textit{window probe};
+    \item O servidor, ao receber o novo \textit{window probe}, responde com a sua \textit{window size} atualizada, que, como agora é
+    dois, permite ao agente enviar o pacote em falta;
+    \item O agente envia finalmente o pacote, e o servidor, ao receber, envia o ACK, atualizando a \textit{window size} para 1.
+\end{enumerate}
+
 
 %===============================================================================
 % END PROTOCOLOS APLICACIONAIS
