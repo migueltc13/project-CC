@@ -122,6 +122,8 @@ class UDP(threading.Thread):
                                                         args=(raw_data, addr,))
                 self.threads.append(handle_packet_thread)
                 handle_packet_thread.start()
+                # INFO To process the packets sequentially, join the thread
+                # handle_packet_thread.join()
             except socket.timeout:
                 continue
             except OSError:
@@ -184,8 +186,10 @@ class UDP(threading.Thread):
         # if the URG flag is set, send the packet immediately, regardless of the window size
         # if the window size received is 0, the window size control thread will send window probe
         # packets to the agents with window size 0
+        # TODO remove this and move it to the send method
+        # to ensure that the packet is sent only when the window size is greater than 0
         if packet["flags"]["urgent"] == 0:
-            while self.pool.get_client_window_size(agent_id) == 0:
+            while self.pool.get_client_window_size(agent_id) <= 0:
                 time.sleep(1)
                 if self.verbose and self.ui.view_mode:
                     print(f"Agent {agent_id} window size is 0. Waiting...")
@@ -250,7 +254,7 @@ class UDP(threading.Thread):
             if self.verbose and self.ui.view_mode:
                 print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
 
-    # def send_task(self, agent_id, task):  # TODO
+    # def send_task(self, agent_id, addr, task):  # TODO
 
     def send_end_of_connection(self):
         # Get the connected agents and respective addresses
