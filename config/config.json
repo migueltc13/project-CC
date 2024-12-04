@@ -3,7 +3,7 @@
         {
             "task_id": 1,
             "agent_id": "acer",
-            "frequency": 5,
+            "frequency": 10,
             "tools_params": {
                 "iperf": {
                     "is_client": true,
