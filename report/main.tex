@@ -315,21 +315,23 @@ se sobrecarrega a largura de banda com múltiplas retransmissões de pacotes.
 
 \textbf{Controlo de Fluxo}
 
-O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
-indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
-O valor inicial da janela de receção é definido no ficheiro \texttt{constants.py} sobre a nomenclatura
-\texttt{INITIAL\_WINDOW\_SIZE}, sendo este valor de 32 pacotes. O emissor, ao enviar um pacote, indica
-a sua janela de receção, sendo esta referente à quantidade de espaço disponível na sua lista de pacotes
-por desfragmentar e ordenar, uma vez que na implementação atual, é criada uma \textit{thread} para processar
-pacotes recebidos, então apenas os pacotes fragmentados são guardados em memória, servindo estes para a indicação
-do tamanho da janela de receção.
-O recetor, ao receber um pacote, se a janela de receção do emissor for zero,
-a \textit{thread} responsável por processar pacotes é colocada em espera,
-e outra thread, criada posteriormente, é responsável por enviar \textit{window probes}
-aos emissores com \textit{window sizes} iguais a zero. Uma vez que o emissor
-responder ao \textit{window probe} com a sua janela de receção superior a zero,
-a \textit{thread} responsável por processar o pacote é libertada para continuar
-a execução.
+\textcolor{red}{
+    O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
+    indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
+    O valor inicial da janela de receção é definido no ficheiro \texttt{constants.py} sobre a nomenclatura
+    \texttt{INITIAL\_WINDOW\_SIZE}, sendo este valor de 32 pacotes. O emissor, ao enviar um pacote, indica
+    a sua janela de receção, sendo esta referente à quantidade de espaço disponível na sua lista de pacotes
+    por desfragmentar e ordenar, uma vez que na implementação atual, é criada uma \textit{thread} para processar
+    pacotes recebidos, então apenas os pacotes fragmentados são guardados em memória, servindo estes para a indicação
+    do tamanho da janela de receção.
+    O recetor, ao receber um pacote, se a janela de receção do emissor for zero,
+    a \textit{thread} responsável por processar pacotes é colocada em espera,
+    e outra thread, criada posteriormente, é responsável por enviar \textit{window probes}
+    aos emissores com \textit{window sizes} iguais a zero. Uma vez que o emissor
+    responder ao \textit{window probe} com a sua janela de receção superior a zero,
+    a \textit{thread} responsável por processar o pacote é libertada para continuar
+    a execução.
+}
 
 \subsection{Diagramas de Sequência}
 
@@ -388,9 +390,14 @@ de forma a garantir a terminação da conexão com sucesso.
     \item O servidor descarta o pacote duplicado, pois, no passo (5), já tinha guardado o número de sequência 3.
     O servidor reenvia o ACK para evitar retransmissões desnecessárias.
 \end{enumerate}
-    
+
 
 \textbf{Controlo de Fluxo}
+
+\textcolor{red}{
+    TODO \\
+    Diagrama de sequência do controlo de fluxo
+}
 
 %===============================================================================
 % END PROTOCOLOS APLICACIONAIS
@@ -446,12 +453,55 @@ options:
 
 \section{Ficheiro de Configuração}
 
+O ficheiro de configuração permite a definição de tarefas aos agentes pelo servidor,
+este é carregado no início da execução do servidor, e é enviado a cada agente aquando
+da sua conexão. O sistema desenvolvido suporta as seguintes métricas e alertas:
+
+\begin{itemize}
+    \item \textbf{Métricas de dispositivo}:
+    \begin{itemize}
+        \item \textbf{\textit{CPU Usage}}: percentagem de utilização da CPU;
+        \item \textbf{\textit{RAM Usage}}: percentagem de utilização da memória RAM;
+        \item \textbf{\textit{Interfaces stats}}: \textcolor{red}{número de pacotes por segundo,
+            para cada interface de rede definida}.
+    \end{itemize}
+    \item \textbf{Métricas de rede}:
+    \begin{itemize}
+        \item \textbf{\textit{Bandwidth}}: consumo de largura de banda, \textcolor{red}{em Mbps};
+        \item \textbf{\textit{Jitter}}: variação do atraso entre pacotes, \textcolor{red}{em milissegundos};
+        \item \textbf{\textit{Packet Loss}}: percentagem de pacotes perdidos;
+        \item \textbf{\textit{Latency}}: atraso entre o envio e a receção de pacotes, \textcolor{red}{em milissegundos}.
+    \end{itemize}
+    \item \textbf{Alertas}: aquando os valores obtidos excedem os limites definidos.
+    \begin{itemize}
+        \item \textbf{\textit{CPU Usage}};
+        \item \textbf{\textit{RAM Usage}};
+        \item \textbf{\textit{Interfaces stats}};
+        \item \textbf{\textit{Packet Loss}};
+        \item \textbf{\textit{Jitter}}.
+    \end{itemize}
+\end{itemize}
+
+Neste ficheiro, é possível definir os parâmetros de utilização de cada ferramenta usada no cálculo das métricas,
+por exemplo, no caso do \texttt{iperf3}, é possível definir a duração do teste, a camada de transporte, se tal é
+\textit{server} ou \textit{client}, entre outros. Estes parâmetros são utilizados por tarefa, o que permite a
+diferentes agentes executarem o mesmo teste com diferentes parâmetros.
+
+Outra consideração importante na utilização do \texttt{iperf3} é a necessidade de
+definir as tarefas de ambos os agentes, os quais em modo cliente ou servidor,
+de forma a que seja possível executar o teste.
+
+\textcolor{red}{
+    TODO falta indicar as opcoes das ferramentas para as métricas de rede. \\
+    Nota packet loss e jitter apenas funcionam com o iperf se estiver a usar UDP
+}
+
 \section{Bibliotecas Utilizadas}
 
 \textcolor{red}{
     Dúvida: deve-se referir todas as bibliotecas utilizadas no desenvolvimento? \\
     por exemplo: \textit{socket}, \textit{os}, \textit{sys}, \textit{threading}, etc
-    Ou apenas as bibliotecas mais relevantes para a solução? \textit{ping3}, \textit{iperf}, etc
+    Ou apenas as bibliotecas mais relevantes para a solução? \textit{psutil}, \textit{ping3}, \textit{iperf}, etc
 }
 
 \section{\textcolor{red}{Detalhes Técnicos? Maybe}}
@@ -475,13 +525,6 @@ options:
     As demonstrações para situcoes normais e adversas, contam para este capítulo?
     Ou teremos de fazer testes mais específicos? \\
     Checksum, pacotes duplicados, retransmissão, defrag, controlo de fluxo, compatibilidade de versões...
-}
-
-\textcolor{red}{
-    Para além da testagem manual contínua ao longo do desenvolvimento, foram
-    desenvolvidos testes unitários para as classes e funções mais críticas do
-    sistema. Estes testes foram desenvolvidos com recurso à biblioteca
-    \textit{unittest} do Python.
 }
 
 %===============================================================================
@@ -518,9 +561,10 @@ desempenho e a execução de tarefas de monitorização de forma eficiente e fi�
 \section{Trabalho Futuro}
 
 \textcolor{red}{
-    TODO
-    Encriptação de mensagens
-    Gerar análises gráficas dos resultados
+    TODO \\
+    Encriptação de mensagens (Nonce) \\
+    Gerar análises gráficas dos resultados \\
+    Reatribuição de tarefas em runtime
 }
 
 %===============================================================================
