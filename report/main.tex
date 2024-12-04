@@ -509,11 +509,33 @@ de forma a que seja possível executar o teste.
 
 \section{Bibliotecas Utilizadas}
 
-\textcolor{red}{
-    Dúvida: deve-se referir todas as bibliotecas utilizadas no desenvolvimento? \\
-    por exemplo: \textit{socket}, \textit{os}, \textit{sys}, \textit{threading}, etc
-    Ou apenas as bibliotecas mais relevantes para a solução? \textit{psutil}, \textit{ping3}, \textit{iperf}, etc
-}
+Para a implementação do \textbf{\textit{Network Monitoring System}}, foram utilizadas
+as seguintes bibliotecas em \textit{Python3}:
+
+\subsection{Bibliotecas Gerais:}
+\begin{itemize}
+    \item \textbf{\textit{socket}}: para a comunicação entre o servidor e os agentes,
+    permitindo a troca de mensagens entre os sistemas;
+    \item \textbf{\textit{threading}}: para a execução de tarefas em \textit{threads} separadas,
+    permitindo a execução de tarefas em paralelo;
+    \item \textbf{\textit{json}}: para a codificação e descodificação de mensagens em formato JSON,
+    permitindo a transmissão de dados entre o servidor e os agentes;
+    \item \textbf{\textit{os}}: para a execução de comandos do sistema operativo, permitindo a
+    recolha de métricas de desempenho dos dispositivos;
+    \item \textbf{\textit{sys}}: para a obtenção de argumentos passados na linha de comandos,
+    permitindo a definição de parâmetros de execução dos executáveis.
+\end{itemize}
+
+\subsection{Bibliotecas Específicas:}
+\begin{itemize}
+    \item \textbf{\textit{psutil}}: para a recolha de métricas de desempenho dos dispositivos,
+    permitindo a obtenção de informações sobre a utilização da CPU, memória RAM e interfaces de rede;
+    \item \textbf{\textit{ping3}}: para a execução de testes de latência e perda de pacotes,
+    permitindo a obtenção de informações sobre esses dados entre sistemas;
+    \item \textbf{\textit{iperf3}}: para a execução de testes de largura de banda e \textit{jitter},
+    permitindo a obtenção de informações sobre esses dados entre sistemas.
+\end{itemize}
+
 
 \section{\textcolor{red}{Detalhes Técnicos? Maybe}}
 
