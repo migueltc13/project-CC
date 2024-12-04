@@ -1,4 +1,5 @@
 import psutil
+import time
 
 
 # Get the current CPU usage (%)
@@ -15,8 +16,25 @@ def get_ram_usage():
 
 # Get the packets per second per network interface
 def get_network_usage(interfaces):
+
+    initial_stats = {
+        interface: stats.packets_sent + stats.packets_recv
+        for interface, stats in psutil.net_io_counters(pernic=True).items()
+        if interface in interfaces
+    }
+
+    time.sleep(1)
+
+    end_stats = {
+        interface: stats.packets_sent + stats.packets_recv
+        for interface, stats in psutil.net_io_counters(pernic=True).items()
+        if interface in interfaces
+    }
+
     network_usage = dict()
-    for interface, stats in psutil.net_io_counters(pernic=True).items():
-        if interface in interfaces:
-            network_usage[interface] = stats.packets_sent + stats.packets_recv
+    for interface, stats in end_stats.items():
+        end = end_stats[interface]
+        start = initial_stats[interface]
+        network_usage[interface] = end - start
+
     return network_usage
