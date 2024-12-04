@@ -401,19 +401,13 @@ de forma a garantir a terminação da conexão com sucesso.
     \label{fig:nt_flux_control}
 \end{minipage}
 
-\begin{enumerate}
-    \item O agente envia um pacote de grande porte, que tem que ser fragmentado e enviado em três pacotes distintos.
-    Entretanto, a \textit{window size} encontra-se inicialmente a dois;
-    \item O servidor, ao receber os pacotes, encarrega-se de enviar os respetivos ACKs, atualizando a \textit{window size},
-    até que, no terceiro pacote, ela encontra-se a -1;
-    \item O agente necessitava enviar mais um pacote, porém, a \textit{window size} é inferior a zero, então sabe que o servidor
-    tem o \textit{buffer} cheio, pelo que envia um \textit{window probe} para verificar a \textit{window size} do servidor;
-    \item O servidor, ao receber o \textit{window probe}, responde com a sua \textit{window size}, que ainda é zero;
-    \item O agente aguarda e volta a enviar mais um \textit{window probe};
-    \item O servidor, ao receber o novo \textit{window probe}, responde com a sua \textit{window size} atualizada, que, como agora é
-    dois, permite ao agente enviar o pacote em falta;
-    \item O agente envia finalmente o pacote, e o servidor, ao receber, envia o ACK, atualizando a \textit{window size} para 1.
-\end{enumerate}
+O agente pretende enviar dois pacotes, sendo o primeiro de grande porte, num curto espaço de tempo. Este primeiro tem que ser
+fragmentado e enviado em três pacotes distintos \textbf{(1)}. Entretanto, a \textit{window size} encontra-se a dois.
+O servidor, ao receber os pacotes, encarrega-se de enviar os respetivos ACKs, atualizando a sua \textit{window size}, até que, no terceiro
+pacote, ela encontra-se a -1 \textbf{(2)}. O agente necessitava enviar mais um pacote, porém, a \textit{window size} é inferior a zero,
+então sabe que o servidor tem o \textit{buffer} cheio, pelo que envia \textit{window probes} \textbf{(3)} para o servidor
+até este lhe indicar que a sua \textit{window size} voltou a ser superior a zero \textbf{(4)}. Posto isto, o agente pode finalmente enviar
+o pacote em falta \textbf{(5)}.
 
 
 %===============================================================================
@@ -515,11 +509,33 @@ de forma a que seja possível executar o teste.
 
 \section{Bibliotecas Utilizadas}
 
-\textcolor{red}{
-    Dúvida: deve-se referir todas as bibliotecas utilizadas no desenvolvimento? \\
-    por exemplo: \textit{socket}, \textit{os}, \textit{sys}, \textit{threading}, etc
-    Ou apenas as bibliotecas mais relevantes para a solução? \textit{psutil}, \textit{ping3}, \textit{iperf}, etc
-}
+Para a implementação do \textbf{\textit{Network Monitoring System}}, foram utilizadas
+as seguintes bibliotecas em \textit{Python3}:
+
+\subsection{Bibliotecas Gerais:}
+\begin{itemize}
+    \item \textbf{\textit{socket}}: para a comunicação entre o servidor e os agentes,
+    permitindo a troca de mensagens entre os sistemas;
+    \item \textbf{\textit{threading}}: para a execução de tarefas em \textit{threads} separadas,
+    permitindo a execução de tarefas em paralelo;
+    \item \textbf{\textit{json}}: para a codificação e descodificação de mensagens em formato JSON,
+    permitindo a transmissão de dados entre o servidor e os agentes;
+    \item \textbf{\textit{os}}: para a execução de comandos do sistema operativo, permitindo a
+    recolha de métricas de desempenho dos dispositivos;
+    \item \textbf{\textit{sys}}: para a obtenção de argumentos passados na linha de comandos,
+    permitindo a definição de parâmetros de execução dos executáveis.
+\end{itemize}
+
+\subsection{Bibliotecas Específicas:}
+\begin{itemize}
+    \item \textbf{\textit{psutil}}: para a recolha de métricas de desempenho dos dispositivos,
+    permitindo a obtenção de informações sobre a utilização da CPU, memória RAM e interfaces de rede;
+    \item \textbf{\textit{ping3}}: para a execução de testes de latência e perda de pacotes,
+    permitindo a obtenção de informações sobre esses dados entre sistemas;
+    \item \textbf{\textit{iperf3}}: para a execução de testes de largura de banda e \textit{jitter},
+    permitindo a obtenção de informações sobre esses dados entre sistemas.
+\end{itemize}
+
 
 \section{\textcolor{red}{Detalhes Técnicos? Maybe}}
 
