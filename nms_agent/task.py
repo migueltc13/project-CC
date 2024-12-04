@@ -53,9 +53,11 @@ class Task(threading.Thread):
                     print(f"Task metrics: {metrics}")
 
                     # Send the task metrics and alerts to the server
-                    # self.client_udp.send_metric(metrics)
-                    self.client_udp.send_metric(json.dumps(metrics))
-                    self.client_tcp.send_alert(json.dumps(alerts))
+                    if metrics:
+                        self.client_udp.send_metric(json.dumps(metrics))
+
+                    if alerts:
+                        self.client_tcp.send_alert(json.dumps(alerts))
 
                     # Sleep for the task interval
                     frequency = task["frequency"]
@@ -136,6 +138,10 @@ class Task(threading.Thread):
                             "interface_stats": stats,
                             "alert_condition": alert_conditions["interface_stats"]["threshold"]
                         })
+
+                # if the alerts list is empty, remove the key from the alerts dictionary
+                if len(alerts[AlertFlow.INTERFACE_STATS]) == 0:
+                    alerts.pop(AlertFlow.INTERFACE_STATS)
 
             # TODO Packet loss
 
