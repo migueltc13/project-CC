@@ -59,8 +59,9 @@ HEADER_SIZE = (SIZE_NMS_VERSION + SIZE_SEQ_NUMBER + SIZE_FLAGS_TYPE +
 # B    unsigned char       (1 byte)
 # H    unsigned short      (2 bytes)
 # I    unsigned int        (4 bytes)
+# h    signed short        (2 bytes)
 # Xs   string with X chars (X bytes)
-STRUCT_FORMAT = '!B H B H H H 32s'
+STRUCT_FORMAT = '!B H B h H H 32s'
 
 
 ###
