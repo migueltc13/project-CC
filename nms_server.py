@@ -45,7 +45,7 @@ def main():
     ui = ServerUI(server_hostname, pool, verbose=args.verbose)
     ui.display_title()
 
-    tcp_server = TCPServer(ui)
+    tcp_server = TCPServer(ui, verbose=args.verbose)
     udp_server = UDPServer(ui, pool, task_server, verbose=args.verbose)
 
     tcp_server.start()

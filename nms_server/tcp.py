@@ -1,6 +1,7 @@
 import socket
 import threading
 import sys
+import json
 
 import constants as C
 
@@ -16,9 +17,10 @@ TCP_CLIENTS_QUEUE_SIZE = 8
 
 
 class TCP(threading.Thread):
-    def __init__(self, ui, host='0.0.0.0', port=C.TCP_PORT):
+    def __init__(self, ui, verbose=False, host='0.0.0.0', port=C.TCP_PORT):
         super().__init__(daemon=True)
         self.ui = ui
+        self.verbose = verbose
         self.host = host
         self.port = port
         self.server_hostname = ui.server_hostname
@@ -65,13 +67,55 @@ class TCP(threading.Thread):
 
                     try:
                         packet = self.alert_flow.parse_packet(self.alert_flow, raw_data)
-                        print(f"Received alert {packet}")
+                        if self.ui.view_mode and self.verbose:
+                            print(f"Received alert {packet}")
                     except (InvalidVersionException, InvalidHeaderException) as e:
                         self.ui.display_error(e)
                         break
 
-                    # TODO save alert
-                    # self.ui.save_alert(str(packet['identifier']), str(packet['data']))
+                    # Save alerts received
+                    agent_id = packet['identifier']
+                    alerts = json.loads(packet['data'])
+
+                    for alert_type, alert_data in alerts.items():
+                        alert_type = int(alert_type)
+                        messages = []
+                        match alert_type:
+                            case AlertFlow.CPU_USAGE:
+                                messages.append(
+                                    f"CPU usage {alert_data["cpu_usage"]}. " +
+                                    f"Alert condition: {alert_data["alert_condition"]}"
+                                )
+                            case AlertFlow.RAM_USAGE:
+                                messages.append(
+                                    f"RAM usage {alert_data["ram_usage"]}. " +
+                                    f"Alert condition: {alert_data["alert_condition"]}"
+                                )
+                            case AlertFlow.INTERFACE_STATS:
+                                for interface in alert_data:
+                                    messages.append(
+                                        f"Interface {interface["interface"]} " +
+                                        f"received {interface["interface_stats"]} packets. " +
+                                        f"Alert condition: {interface["alert_condition"]}"
+                                    )
+                            case AlertFlow.PACKET_LOSS:
+                                messages.append(
+                                    f"Packet loss {alert_data["packet_loss"]}. " +
+                                    f"Alert condition: {alert_data["alert_condition"]}"
+                                )
+                            case AlertFlow.JITTER:
+                                messages.append(
+                                    f"Jitter {alert_data["jitter"]}. " +
+                                    f"Alert condition: {alert_data["alert_condition"]}"
+                                )
+                            case _:
+                                if self.ui.view_mode:
+                                    print("Unknown alert type received")
+
+                        for message in messages:
+                            self.ui.save_alert(agent_id, alert_type, message)
+
+                        messages = []
                 except socket.timeout:
                     pass
 
