@@ -70,8 +70,11 @@ class Pool:
 
     def inc_seq_number(self, client):
         with self.lock:
-            self.seq_numbers[client] += 1
-            return self.seq_numbers[client]
+            try:
+                self.seq_numbers[client] += 1
+                return self.seq_numbers[client]
+            except KeyError:
+                return 0
 
     ###
     # Packets sent to be acknowledged
