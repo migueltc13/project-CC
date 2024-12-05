@@ -163,6 +163,8 @@ class Pool:
                     f_packet for f_packet in self.packets_to_reorder[client]
                     if f_packet != packet
                 ]
+                # increment the server window size
+                self.server_window_size += 1
                 return packet
 
             # Fragmentation/reordering is possible
