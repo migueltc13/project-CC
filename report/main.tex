@@ -315,23 +315,20 @@ se sobrecarrega a largura de banda com múltiplas retransmissões de pacotes.
 
 \textbf{Controlo de Fluxo}
 
-\textcolor{red}{
-    O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
-    indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
-    O valor inicial da janela de receção é definido no ficheiro \texttt{constants.py} sobre a nomenclatura
-    \texttt{INITIAL\_WINDOW\_SIZE}, sendo este valor de 32 pacotes. O emissor, ao enviar um pacote, indica
-    a sua janela de receção, sendo esta referente à quantidade de espaço disponível na sua lista de pacotes
-    por desfragmentar e ordenar, uma vez que na implementação atual, é criada uma \textit{thread} para processar
-    pacotes recebidos, então apenas os pacotes fragmentados são guardados em memória, servindo estes para a indicação
-    do tamanho da janela de receção.
-    O recetor, ao receber um pacote, se a janela de receção do emissor for zero,
-    a \textit{thread} responsável por processar pacotes é colocada em espera,
-    e outra thread, criada posteriormente, é responsável por enviar \textit{window probes}
-    aos emissores com \textit{window sizes} iguais a zero. Uma vez que o emissor
-    responder ao \textit{window probe} com a sua janela de receção superior a zero,
-    a \textit{thread} responsável por processar o pacote é libertada para continuar
-    a execução.
-}
+
+O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
+indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
+O valor inicial da janela de receção é definido no ficheiro \texttt{constants.py} sobre a nomenclatura
+\texttt{INITIAL\_WINDOW\_SIZE}, sendo este valor de 32 pacotes. O emissor, ao enviar um pacote, indica
+a sua janela de receção, sendo esta referente à quantidade de espaço disponível na sua lista de pacotes
+por desfragmentar e ordenar, uma vez que na implementação atual, é criada uma \textit{thread} para processar
+pacotes recebidos, então apenas os pacotes fragmentados são guardados em memória, servindo estes para a indicação
+do tamanho da janela de receção.
+Quando a janela de receção do recetor é menor ou igual a zero, o emissor, antes de enviar pacotes, aguarda até que essa incremente,
+de forma a não congestionar a rede e o recetor. Para esta medição dos \textit{window sizes}
+dos recetores, é, posteriormente, criada uma \textit{thread} responsável por enviar \textit{window probes} aos mesmos
+com \textit{window sizes} menores ou iguais a zero, de forma a que estes respondam com a sua janela de receção.
+
 
 \subsection{Diagramas de Sequência}
 
@@ -537,12 +534,38 @@ as seguintes bibliotecas em \textit{Python3}:
 \end{itemize}
 
 
-\section{\textcolor{red}{Detalhes Técnicos? Maybe}}
+\section{Detalhes Técnicos da Implementação}
 
-\textcolor{red}{
-    Neste descrição de funcionalidades, não falamos que o servidor guarda por exemplo,
-    pacotes por ordenar/desfragmentar, num dicionário para cada agente, devemos referir?
-}
+\subsection{Constantes escolhidas}
+
+Ao longo da implementação, foram definidas várias constantes, que permitem a
+configuração do sistema de forma mais simples e centralizada. Estas constantes
+são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
+\begin{itemize}
+    \item \textbf{\texttt{RETRANSMIT\_SLEEP\_TIME}}: tempo de espera para a retransmissão de pacotes não confirmados, em segundos.
+    Definimos como sendo 5 segundos, pois este intervalo oferece um equilíbrio entre evitar retransmissões desnecessárias e reagir
+    rapidamente a perdas de pacotes.
+    \item \textbf{\texttt{INITIAL\_WINDOW\_SIZE}}: tamanho inicial da janela de receção, em pacotes. Definimos como sendo 32 pacotes,
+    considerando que este valor permite um bom compromisso entre a ocupação inicial da memória e a eficiência da transferência de dados.
+    Este tamanho é suficientemente grande para suportar tráfego inicial de médio volume sem necessidade imediata de expansão. 
+    \item \textbf{\texttt{MAX\_RETRANSMISSIONS}}: número máximo de retransmissões de pacotes. Definimos como sendo 3 retransmissões,
+    pois é um valor comum em sistemas tolerantes a falhas, garantindo uma recuperação robusta de pacotes perdidos sem causar sobrecarga
+    significativa na rede.
+    \item \textbf{\texttt{MAX\_FRAGMENT\_SIZE}}: tamanho máximo de um fragmento, em \textit{bytes}. Definimos como sendo 1000 \textit{bytes},
+    para garantir que cada fragmento é pequeno o suficiente para incluir sobrecarga adicional (como cabeçalhos de protocolo) sem exceder o 
+    \texttt{BUFFER\_SIZE}.
+    \item \textbf{\texttt{MAX\_MESSAGE\_SIZE}}: tamanho máximo de uma mensagem, em \textit{bytes}. Definimos como sendo 10000 \textit{bytes},
+    pois este valor é suficiente para transmitir mensagens razoavelmente grandes, enquanto mantém um número manejável de fragmentos ao dividi-las.
+    \item \textbf{\texttt{MAX\_WINDOW\_SIZE}}: tamanho máximo da janela de receção, em pacotes. Definimos como sendo 64 pacotes, o dobro do tamanho
+    inicial da janela (\texttt{INITIAL\_WINDOW\_SIZE}). Este valor oferece flexibilidade suficiente para lidar com variações no volume de 
+    dados recebidos, sem impactar negativamente o desempenho.
+    \item \textbf{\texttt{WINDOW\_PROBE\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de sondar o tamanho da janela de receção.
+    Foi definido como 10 segundos, permitindo que o sistema avalie e ajuste dinamicamente a capacidade de receção, sem sondagens excessivamente
+    frequentes.
+    \item \textbf{\texttt{EOC\_ACK\_TIMEOUT}}: tempo máximo de espera para o recebimento de confirmações de término de conexão, em segundos.
+    Foi definido como 10 segundos, garantindo um intervalo razoável para detectar problemas sem causar desconexões prematuras.    
+\end{itemize}
+
 
 %===============================================================================
 % END IMPLEMENTAÇÃO
