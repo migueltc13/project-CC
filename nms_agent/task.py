@@ -49,8 +49,6 @@ class Task(threading.Thread):
                 # TODO intialize a thread for each task
                 for task in self.loaded_tasks:
                     metrics, alerts = self.run_task(task)
-                    print(f"Task alerts: {alerts}")
-                    print(f"Task metrics: {metrics}")
 
                     # Send the task metrics and alerts to the server
                     if metrics:
@@ -80,11 +78,38 @@ class Task(threading.Thread):
                 interfaces = device_metrics["interface_stats"]
                 metrics["interface_stats"] = device.get_network_usage(interfaces)
 
-        # TODO Link metrics
-        # bandwith
-        # jitter (ping, iperf)
-        # packet loss (ping, iperf)
-        # latency (ping)
+        # Link metrics
+        # - bandwith    (iperf TCP)
+        # - jitter      (iperf UDP, ping)
+        # - packet loss (iperf UDP, ping)
+        # - latency     (ping)
+
+        # TODO Get all the link metrics that use iperf
+        iperf_metrics = [
+            key
+            for key, value in task["link_metrics"].items()
+            if value["tool"] == "iperf"
+        ]
+
+        # Get all the link metrics that use ping
+        ping_metrics = [
+            key
+            for key, value in task["link_metrics"].items()
+            if value["tool"] == "ping"
+        ]
+
+        # Get the ping parameters
+        ping_params = task["tools_params"]["ping"]
+        destination = ping_params.get("destination", "localhost")
+        packet_count = ping_params.get("packet_count", 10)
+
+        # Execute the ping command
+        ping_results = link.ping(destination, ping_metrics, packet_count)
+
+        # Parse the ping results
+        if ping_results:
+            for option, value in ping_results.items():
+                metrics[option] = value
 
         # Alert conditions
         alert_conditions = task["alertflow_conditions"]
