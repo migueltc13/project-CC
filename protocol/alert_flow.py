@@ -38,7 +38,6 @@ HEADER_SIZE = SIZE_NMS_VERSION + SIZE_IDENTIFIER
 # Xs   string with X chars (X bytes)
 STRUCT_FORMAT = '!B 32s'
 
-
 ###
 # AlertFlow Main Class
 ###
@@ -50,22 +49,6 @@ class AlertFlow:
     INTERFACE_STATS = 2
     PACKET_LOSS     = 3
     JITTER          = 4
-
-    @staticmethod
-    def parse_alert_type(self, alert_type):
-        match alert_type:
-            case self.CPU_USAGE:
-                return "CPU usage"
-            case self.RAM_USAGE:
-                return "RAM usage"
-            case self.INTERFACE_STATS:
-                return "Interface stats"
-            case self.PACKET_LOSS:
-                return "Packet loss"
-            case self.JITTER:
-                return "Jitter"
-            case _:
-                return "Unknown alert type"
 
     @staticmethod
     def parse_packet(self, packet):
@@ -105,3 +88,19 @@ class AlertFlow:
         )
 
         return header + data.encode(C.ENCODING)
+
+
+def parse_alert_type(alert_type):
+    match alert_type:
+        case AlertFlow.CPU_USAGE:
+            return "CPU usage"
+        case AlertFlow.RAM_USAGE:
+            return "RAM usage"
+        case AlertFlow.INTERFACE_STATS:
+            return "Interface stats"
+        case AlertFlow.PACKET_LOSS:
+            return "Packet loss"
+        case AlertFlow.JITTER:
+            return "Jitter"
+        case _:
+            return "Unknown alert type"
