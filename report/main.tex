@@ -590,7 +590,7 @@ são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
 %===============================================================================
 % BEGIN CONCLUSÕES E TRABALHO FUTURO
 %===============================================================================
-\newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\newgeometry{left=2.5cm, right=2.5cm, top=2.0cm, bottom=2.0cm}
 
 \chapter{Trabalho Futuro e Conclusões}
 
@@ -601,9 +601,11 @@ possível adicionar novas funcionalidades e otimizações para melhorar a sua ef
 e desempenho. Algumas sugestões para trabalho futuro incluem:
 
 \begin{itemize}
-    \item \textbf{Encriptação de Mensagens}: adicionar encriptação de mensagens para
-    garantir a confidencialidade e integridade dos dados transmitidos entre o servidor
-    e os agentes;
+    \item \textbf{Encriptação de Mensagens}: adicionar encriptação de
+    mensagens para garantir a confidencialidade e integridade dos dados transmitidos entre
+    o servidor e os agentes. Além disso, incorporar o uso de \textit{nonces}, aprendidos nas aulas teóricas,
+    na encriptação como forma de prevenir (\textit{replay attacks}), assegurando que cada mensagem
+    transmitida seja única e protegida contra reutilização por agentes mal-intencionados;
     \item \textbf{Análises Gráficas dos Resultados}: implementar a geração de análises
     gráficas dos resultados obtidos, permitindo uma visualização mais intuitiva e
     compreensível das métricas de desempenho;
