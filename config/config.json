@@ -10,7 +10,6 @@
                     "server_address": "192.168.1.10",
                     "port": 5001,
                     "duration": 10,
-                    "transport": "TCP"
                 },
                 "ping": {
                     "packet_count": 5
