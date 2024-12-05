@@ -1,4 +1,4 @@
-# CC
+# Network Monitoring System (NMS)
 
 A network monitoring system to monitor device and network metrics,
 implemented in Python within Computer Communications environment in 2024/2025 academic year.
