@@ -78,11 +78,13 @@ class UDP(threading.Thread):
                         packet["msg_type"], agent_id,
                         window_size)
 
-                    for ret_packet in ret_packets:
-                        # wait if the server window size is 0
-                        while self.pool.get_client_window_size(agent_id) == 0:
-                            time.sleep(0.1)
+                    # wait if the server window size is 0 and the URG flag is not set
+                    urgent = flags.get("urgent", 0)
+                    if urgent == 0:
+                        while self.pool.get_client_window_size(agent_id) <= 0:
+                            time.sleep(1)
 
+                    for ret_packet in ret_packets:
                         with self.lock:
                             self.server_socket.sendto(ret_packet, addr)
 
@@ -182,18 +184,6 @@ class UDP(threading.Thread):
         # increment the sequence number
         self.pool.inc_seq_number(agent_id)
 
-        # Flux control by checking the window size
-        # if the URG flag is set, send the packet immediately, regardless of the window size
-        # if the window size received is 0, the window size control thread will send window probe
-        # packets to the agents with window size 0
-        # TODO remove this and move it to the send method
-        # to ensure that the packet is sent only when the window size is greater than 0
-        if packet["flags"]["urgent"] == 0:
-            while self.pool.get_client_window_size(agent_id) <= 0:
-                time.sleep(1)
-                if self.verbose and self.ui.view_mode:
-                    print(f"Agent {agent_id} window size is 0. Waiting...")
-
         # Packet reordering and defragmentation
         packet = self.pool.reorder_packets(agent_id, packet)
         if packet is None:
@@ -212,21 +202,14 @@ class UDP(threading.Thread):
         match packet["msg_type"]:
             case self.net_task.FIRST_CONNECTION:
                 # Send tasks to the agent
-                tasks = self.task_server.get_agent_tasks(agent_id)
-                if tasks:
-                    for task in tasks:
-                        self.send(json.dumps(task), {}, self.net_task.SEND_TASKS, agent_id, addr)
-                        if self.verbose and self.ui.view_mode:
-                            print(f"Sending task {task['task_id']} to {agent_id}")
-                elif self.verbose and self.ui.view_mode:
-                    print(f"No tasks to send to {agent_id}")
+                self.send_tasks(agent_id, addr)
             case self.net_task.SEND_METRICS:
                 # self.ui.save_metric(agent_id, f"Metric data: {packet['data']}")
                 print("TODO save metric")  # TODO
             case self.net_task.EOC:
                 eoc_received = True
 
-        # Defragmentation test
+        # De/fragmentation test
         # self.send("A" * 3000, {}, self.net_task.UNDEFINED, agent_id, addr)
 
         if eoc_received:
@@ -242,6 +225,17 @@ class UDP(threading.Thread):
         # set the sequence number
         self.pool.set_seq_number(agent_id, seq_number)
 
+        # Flux control by checking the window size
+        # if the URG flag is set, send the packet immediately, regardless of the window size
+        # if the window size received is 0, the window size control thread will send window probe
+        # packets to the agents with window size 0
+        urgent = flags.get("urgent", 0)
+        if urgent == 0:
+            while self.pool.get_client_window_size(agent_id) <= 0:
+                time.sleep(1)
+                if self.verbose and self.ui.view_mode:
+                    print(f"Agent {agent_id} window size is 0 or less. Waiting...")
+
         for packet in packets:
             with self.lock:
                 self.server_socket.sendto(packet, addr)
@@ -254,7 +248,15 @@ class UDP(threading.Thread):
             if self.verbose and self.ui.view_mode:
                 print(f"Sending packet: {json.dumps(tmp_packet, indent=2)}")
 
-    # def send_task(self, agent_id, addr, task):  # TODO
+    def send_tasks(self, agent_id, addr):
+        tasks = self.task_server.get_agent_tasks(agent_id)
+        if tasks:
+            for task in tasks:
+                self.send(json.dumps(task), {}, self.net_task.SEND_TASKS, agent_id, addr)
+                if self.verbose and self.ui.view_mode:
+                    print(f"Sending task {task['task_id']} to {agent_id}")
+        elif self.verbose and self.ui.view_mode:
+            print(f"No tasks to send to {agent_id}")
 
     def send_end_of_connection(self):
         # Get the connected agents and respective addresses

@@ -61,11 +61,13 @@ class UDP(threading.Thread):
                     packet["msg_type"], self.agent_id,
                     window_size)
 
-                for ret_packet in ret_packets:
-                    # wait if the server window size is 0
-                    while self.pool.get_server_window_size() == 0:
-                        time.sleep(0.1)
+                # wait if the server window size is 0 and the URG flag is not set
+                urgent = flags.get("urgent", 0)
+                if urgent == 0:
+                    while self.pool.get_server_window_size() >= 0:
+                        time.sleep(1)
 
+                for ret_packet in ret_packets:
                     with self.lock:
                         self.client_socket.sendto(ret_packet, (self.server_ip, C.UDP_PORT))
 
@@ -151,18 +153,6 @@ class UDP(threading.Thread):
         # Increment the sequence number
         self.pool.inc_seq_number()
 
-        # Flux control by checking the window size
-        # if the URG flag is set, send the packet immediately, regardless of the window size
-        # if the window size received is 0, the window size control thread will send window probe
-        # packets to the server
-        # TODO remove this and move it to the send method
-        # to ensure that the packet is sent only when the window size is greater than 0
-        if packet["flags"]["urgent"] == 0:
-            while self.pool.get_server_window_size() <= 0:
-                time.sleep(1)
-                if self.verbose:
-                    print("Server window size is 0. Waiting...")
-
         # Packet reordering and defragmentation
         packet = self.pool.reorder_packets(packet)
         if packet is None:
@@ -199,6 +189,17 @@ class UDP(threading.Thread):
 
         # set the sequence number
         self.pool.set_seq_number(seq_number)
+
+        # Flux control by checking the window size
+        # if the URG flag is set, send the packet immediately, regardless of the window size
+        # if the window size received is 0, the window size control thread will send window probe
+        # packets to the server
+        urgent = flags.get("urgent", 0)
+        if urgent == 0:
+            while self.pool.get_server_window_size() <= 0:
+                time.sleep(1)
+                if self.verbose:
+                    print("Server window size is 0 or less. Waiting...")
 
         for packet in packets:
             with self.lock:
