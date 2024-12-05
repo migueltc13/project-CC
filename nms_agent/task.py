@@ -252,10 +252,16 @@ class Task(threading.Thread):
         if metrics:
             # set the task id for the metrics
             metrics["task_id"] = task["task_id"]
-            self.client_udp.send_metric(json.dumps(metrics))
+            try:
+                self.client_udp.send_metric(json.dumps(metrics))
+            except Exception:
+                print("Error sending metrics. Server not reachable.")
 
         if alerts:
-            self.client_tcp.send_alert(json.dumps(alerts))
+            try:
+                self.client_tcp.send_alert(json.dumps(alerts))
+            except Exception:
+                print("Error sending alerts. Server not reachable.")
 
         # Sleep for the task interval
         frequency = task["frequency"]
