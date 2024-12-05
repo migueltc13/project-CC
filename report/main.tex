@@ -473,8 +473,8 @@ da sua conexão. O sistema desenvolvido suporta as seguintes métricas e alertas
     \begin{itemize}
         \item \textbf{\textit{CPU Usage}}: percentagem de utilização da CPU;
         \item \textbf{\textit{RAM Usage}}: percentagem de utilização da memória RAM;
-        \item \textbf{\textit{Interfaces stats}}: \textcolor{red}{número de pacotes por segundo,
-            para cada interface de rede definida}.
+        \item \textbf{\textit{Interfaces stats}}: número de pacotes por segundo,
+            para cada interface de rede definida.
     \end{itemize}
     \item \textbf{Métricas de rede}:
     \begin{itemize}
@@ -525,10 +525,10 @@ as seguintes bibliotecas em \textit{Python3}:
 \begin{itemize}
     \item \textbf{\textit{psutil}}: para a recolha de métricas de desempenho dos dispositivos,
     permitindo a obtenção de informações sobre a utilização da CPU, memória RAM e interfaces de rede;
-    \item \textbf{\textit{ping3}}: para a execução de testes de latência e perda de pacotes,
-    permitindo a obtenção de informações sobre esses dados entre sistemas;
     \item \textbf{\textit{iperf3}}: para a execução de testes de largura de banda e \textit{jitter},
     permitindo a obtenção de informações sobre esses dados entre sistemas.
+    \item \textbf{\textit{subprocess}}: utilizado para correr o comando nativo \textit{ping}, obtendo
+    o \textit{return code} e o \textit{output} do comando.
 \end{itemize}
 
 \clearpage
@@ -542,28 +542,30 @@ Ao longo da implementação, foram definidas várias constantes, que permitem a
 configuração do sistema de forma mais simples e centralizada. Estas constantes
 são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
 \begin{itemize}
-    \item \textbf{\texttt{RETRANSMIT\_SLEEP\_TIME}}: tempo de espera para a retransmissão de pacotes não confirmados, em segundos.
-    Definimos como sendo 5 segundos, pois este intervalo oferece um equilíbrio entre evitar retransmissões desnecessárias e reagir
-    rapidamente a perdas de pacotes.
-    \item \textbf{\texttt{INITIAL\_WINDOW\_SIZE}}: tamanho inicial da janela de receção, em pacotes. Definimos como sendo 32 pacotes,
-    considerando que este valor permite um bom compromisso entre a ocupação inicial da memória e a eficiência da transferência de dados.
-    Este tamanho é suficientemente grande para suportar tráfego inicial de médio volume sem necessidade imediata de expansão. 
-    \item \textbf{\texttt{MAX\_RETRANSMISSIONS}}: número máximo de retransmissões de pacotes. Definimos como sendo 3 retransmissões,
-    pois é um valor comum em sistemas tolerantes a falhas, garantindo uma recuperação robusta de pacotes perdidos sem causar sobrecarga
-    significativa na rede.
-    \item \textbf{\texttt{MAX\_FRAGMENT\_SIZE}}: tamanho máximo de um fragmento, em \textit{bytes}. Definimos como sendo 1000 \textit{bytes},
-    para garantir que cada fragmento é pequeno o suficiente para incluir sobrecarga adicional (como cabeçalhos de protocolo) sem exceder o 
+    \item \textbf{\texttt{RETRANSMIT\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de retransmitir pacotes não confirmados.
+    Definimos como sendo \textbf{5 segundos}, permitindo uma rápida recuperação de pacotes perdidos sem causar sobrecarga excessiva na rede.
+    Este valor foi escolhido tendo em conta que a retransmissão de pacotes precisa de ter um tempo de resposta curto para garantir a
+    redução do desempenho, porém, não tão curto como nos serviços de \textit{streaming}, por exemplo, onde a latência é crítica.
+    Manter este valor um bocado mais alto reduz a sobrecarga da CPU e tráfego de rede em comparação com intervalos mais curtos.
+    \item \textbf{\texttt{INITIAL\_WINDOW\_SIZE}}: o \textit{window size} foi definido como sendo \textbf{32 pacotes}. 
+    Este valor é suficientemente grande para lidar com tráfego inicial de médio volume, minimizando a necessidade de expansão imediata da janela. 
+    \item \textbf{\texttt{MAX\_RETRANSMISSIONS}}: o limite de retransmissões máximas foi estabelecido em \textbf{3 retransmissões},
+    alinhando-se a práticas comuns em sistemas tolerantes a falhas. Este valor oferece uma boa chance de recuperar pacotes perdidos sem
+    introduzir sobrecarga desnecessária na rede. Um valor ligeiramente maior, como 4 ou 5, poderia melhorar a robustez, porém aumentaria
+    o tráfego em situações de perda.
+    \item \textbf{\texttt{MAX\_FRAGMENT\_SIZE}}: definimos o tamanho máximo de um fragmento como sendo \textbf{1000 \textit{bytes}},
+    para garantir que cada fragmento é pequeno o suficiente para incluir sobrecarga adicional (cabeçalhos de protocolo) sem exceder o 
     \texttt{BUFFER\_SIZE}.
-    \item \textbf{\texttt{MAX\_MESSAGE\_SIZE}}: tamanho máximo de uma mensagem, em \textit{bytes}. Definimos como sendo 10000 \textit{bytes},
+    \item \textbf{\texttt{MAX\_MESSAGE\_SIZE}}: definimos o tamanho máximo da mensagem como sendo \textbf{10000 \textit{bytes}},
     pois este valor é suficiente para transmitir mensagens razoavelmente grandes, enquanto mantém um número manejável de fragmentos ao dividi-las.
-    \item \textbf{\texttt{MAX\_WINDOW\_SIZE}}: tamanho máximo da janela de receção, em pacotes. Definimos como sendo 64 pacotes, o dobro do tamanho
-    inicial da janela (\texttt{INITIAL\_WINDOW\_SIZE}). Este valor oferece flexibilidade suficiente para lidar com variações no volume de 
-    dados recebidos, sem impactar negativamente o desempenho.
-    \item \textbf{\texttt{WINDOW\_PROBE\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de sondar o tamanho da janela de receção.
-    Foi definido como 10 segundos, permitindo que o sistema avalie e ajuste dinamicamente a capacidade de receção, sem sondagens excessivamente
-    frequentes.
+    Caso alcance este valor, a mensagem seria fragmentada em 10 fragmentos de 1000 \textit{bytes} cada.
+    \item \textbf{\texttt{MAX\_WINDOW\_SIZE}}: o \textit{window size} máximo é o dobro do seu tamanho inicial - \textbf{64 pacotes}.
+    Este valor foi escolhido para permitir uma expansão moderada da janela de receção, sem permitir que a esta cresça indefinidamente.
+    \item \textbf{\texttt{WINDOW\_PROBE\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de verificar o \textit{window size}.
+    Foi definido como \textbf{10 segundos}, permitindo uma verificação regular da janela de receção sem causar sobrecarga excessiva na rede.
     \item \textbf{\texttt{EOC\_ACK\_TIMEOUT}}: tempo máximo de espera para o recebimento de confirmações de término de conexão, em segundos.
-    Foi definido como 10 segundos, garantindo um intervalo razoável para detectar problemas sem causar desconexões prematuras.    
+    O intervalo foi definido como \textbf{10 segundos} para garantir que as conexões sejam encerradas rapidamente, sem causar atrasos
+    desnecessários na execução do sistema, nem permitir que as conexões sejam encerradas prematuramente.
 \end{itemize}
 
 
