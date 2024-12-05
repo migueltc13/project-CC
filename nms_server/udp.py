@@ -204,8 +204,8 @@ class UDP(threading.Thread):
                 # Send tasks to the agent
                 self.send_tasks(agent_id, addr)
             case self.net_task.SEND_METRICS:
-                # self.ui.save_metric(agent_id, f"Metric data: {packet['data']}")
-                print("TODO save metric")  # TODO
+                metrics = json.loads(packet["data"])
+                self.ui.save_metrics(agent_id, metrics)
             case self.net_task.EOC:
                 eoc_received = True
 

@@ -26,10 +26,10 @@ class UI:
         if self.view_mode:
             print(f"[ALERT]  ({hostname}) {{{alert_type}}} {message}")
 
-    def save_metric(self, hostname, message):
-        db.operation.insert(db.values.log_type.METRIC, hostname, message)
+    def save_metrics(self, hostname, metrics):
+        db.operation.insert_metrics(hostname, metrics)
         if self.view_mode:
-            print(f"[METRIC] ({hostname}) {message}")
+            print(f"[METRIC] ({hostname}) Metric received. Task ID: {metrics.get('task_id')}")
 
     def display_info(self, message):
         print(f"[INFO] {message}")

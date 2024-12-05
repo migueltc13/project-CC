@@ -21,7 +21,3 @@ class Task:
             return self.tasks[agent_id]
         except KeyError:
             return None
-
-    def parse_metrics(self, agent_id, task, metrics):
-        # TODO Parse the metrics and store them in the database
-        pass

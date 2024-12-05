@@ -54,6 +54,8 @@ class Task(threading.Thread):
 
                     # Send the task metrics and alerts to the server
                     if metrics:
+                        # set the task id for the metrics
+                        metrics["task_id"] = task["task_id"]
                         self.client_udp.send_metric(json.dumps(metrics))
 
                     if alerts:
@@ -80,9 +82,9 @@ class Task(threading.Thread):
 
         # TODO Link metrics
         # bandwith
-        # jitter
-        # packet loss
-        # latency
+        # jitter (ping, iperf)
+        # packet loss (ping, iperf)
+        # latency (ping)
 
         # Alert conditions
         alert_conditions = task["alertflow_conditions"]

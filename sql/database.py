@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import mysql.connector as connector
 from mysql.connector import errors
 import threading
+import json
 
 
 # Get the directory with the database files
@@ -121,11 +122,13 @@ class operation:
 
     # Insert a metric log entry into the database
     @staticmethod
-    def insert_metric(metrics):
-        hostname = None
+    def insert_metrics(hostname, metrics):
+        task_id = metrics.get('task_id')
         cpu_usage = metrics.get('cpu_usage')
         ram_usage = metrics.get('ram_usage')
         interface_stats = metrics.get('interface_stats')
+        # convert interface_stats to json string
+        interface_stats = json.dumps(interface_stats)
         bandwidth = metrics.get('bandwidth')
         jitter = metrics.get('jitter')
         packet_loss = metrics.get('packet_loss')
@@ -138,10 +141,19 @@ class operation:
                 return
 
             try:
-                with open(path.join(db_dir, "queries/insert_metric.sql"), "r") as sql_file:
+                with open(path.join(db_dir, "queries/insert_metric/insert_metric.sql"), "r") \
+                        as sql_file:
                     cursor.execute(
                         sql_file.read(),
-                        (cpu_usage, ram_usage, interface_stats, bandwidth, jitter, packet_loss, latency, hostname, message)
+                        (task_id, cpu_usage, ram_usage, interface_stats,
+                         bandwidth, jitter, packet_loss, latency)
+                    )
+
+                with open(path.join(db_dir, "queries/insert_metric/insert_log.sql"), "r") \
+                        as sql_file:
+                    cursor.execute(
+                        sql_file.read(),
+                        (hostname, message)
                     )
 
             except (FileNotFoundError, errors.Error) as e:

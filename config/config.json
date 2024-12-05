@@ -9,7 +9,7 @@
                     "is_client": true,
                     "server_address": "192.168.1.10",
                     "port": 5001,
-                    "duration": 10,
+                    "duration": 10
                 },
                 "ping": {
                     "packet_count": 5
