@@ -1,5 +1,6 @@
 import json
 
+from protocol.alert_flow import parse_alert_type
 import sql.database as db
 
 
@@ -22,7 +23,8 @@ class UI:
             print(f"[STATUS] ({self.server_hostname}) {message}")
 
     def save_alert(self, hostname, alert_type, message):
-        db.operation.insert(db.values.log_type.ALERT,  hostname, message)
+        db.operation.insert_alert(hostname, alert_type, message)
+        alert_type = parse_alert_type(alert_type)
         if self.view_mode:
             print(f"[ALERT]  ({hostname}) {{{alert_type}}} {message}")
 
@@ -50,7 +52,10 @@ class UI:
         print("1. Display Loaded Tasks")
         print("2. View Real-Time Events")
         print("3. View Connected Agents")
-        print("4. Shutdown Server")
+        print("4. View latest logs")
+        print("5. View latest alerts")
+        print("6. View latest metrics")
+        print("0. Shutdown Server")
 
     def handle_menu_choice(self, choice, tcp_server, udp_server, config):
         match choice:
@@ -78,6 +83,18 @@ class UI:
                             print(f"Packets to Reorder: {self.pool.packets_to_reorder[agent]}")
                             print(f"Window Size: {self.pool.agents_window_sizes[agent]}")
             case 4:
+                limit = self.get_limit_value()
+                logs = db.operation.select_logs(limit)
+                db.operation.print_logs(logs)
+            case 5:
+                limit = self.get_limit_value()
+                alerts = db.operation.select_alerts(limit)
+                db.operation.print_alerts(alerts)
+            case 6:
+                limit = self.get_limit_value()
+                metrics = db.operation.select_metrics(limit)
+                db.operation.print_metrics(metrics)
+            case 0:
                 self.display_info("Shutting down server...")
                 self.running = False
             case _:
@@ -91,3 +108,14 @@ class UI:
                 self.handle_menu_choice(choice, tcp_server, udp_server, config)
             except ValueError:
                 self.display_error("Invalid input. Please enter a number.")
+
+    def get_limit_value(self):
+        while True:
+            try:
+                limit = -1
+                choice = input("Do you want to limit the entries? [y/N]: ")
+                if choice.lower() == "y":
+                    limit = int(input("Enter the limit value: "))
+                return limit
+            except ValueError:
+                self.display_error("Invalid input.")
