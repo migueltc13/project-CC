@@ -2,20 +2,20 @@
     "tasks": [
         {
             "task_id": 1,
-            "agent_id": "acer",
+            "agent_id": "n1",
             "frequency": 10,
             "tools_params": {
                 "iperf": {
                     "is_client": true,
-                    "bind_address": "0.0.0.0",
-                    "server_address": "0.0.0.0",
+                    "bind_address": "10.0.4.10",
+                    "server_address": "10.0.4.7",
                     "port": 10001,
                     "duration": 10,
                     "bandwidth_bps": 1000000
                 },
                 "ping": {
                     "packet_count": 5,
-                    "destination": "google.com"
+                    "destination": "192.168.1.1"
                 }
             },
             "device_metrics": {
@@ -50,12 +50,12 @@
         },
         {
             "task_id": 1001,
-            "agent_id": "acer",
+            "agent_id": "n2",
             "frequency": 10,
             "tools_params": {
                 "iperf": {
                     "is_client": false,
-                    "bind_address": "0.0.0.0",
+                    "bind_address": "10.0.4.7",
                     "port": 10001,
                     "timeout": 10
                 }
