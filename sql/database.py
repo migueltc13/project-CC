@@ -161,7 +161,7 @@ class operation:
 
     # Select log entries with an optional limit
     @staticmethod
-    def select(limit=-1):
+    def select_logs(limit=-1):
         if not isinstance(limit, int) or limit < -1:
             raise RuntimeError("Invalid limit value")
 
@@ -180,7 +180,7 @@ class operation:
 
     # Select alert log entries with an optional limit
     @staticmethod
-    def select_alert(limit=-1):
+    def select_alerts(limit=-1):
         if not isinstance(limit, int) or limit < -1:
             raise RuntimeError("Invalid limit value")
 
@@ -199,7 +199,7 @@ class operation:
 
     # Select metric log entries with an optional limit
     @staticmethod
-    def select_metric(limit=-1):
+    def select_metrics(limit=-1):
         if not isinstance(limit, int) or limit < -1:
             raise RuntimeError("Invalid limit value")
 
@@ -225,18 +225,90 @@ class operation:
         nr = str(nr).rjust(4)
         log_type = log_type.ljust(6)
         hostname = hostname.ljust(8)
+        alert_type = "".ljust(10) if alert_type is None else alert_type.ljust(10)
+        metric_id = "".ljust(9) if metric_id is None else str(metric_id).ljust(9)
 
         print(f"{nr} | {log_type} | {timestamp} | {hostname} | {alert_type} | {metric_id} | {message}")
 
     # Print log entries
     @staticmethod
     def print_logs(logs):
-        print(" Nr  | Type   | Timestamp           | Host     | Alert Type  | Metric Id | Message               ")
-        print("-----|--------|---------------------|----------|-------------|-----------|-----------------------")
+        if len(logs) == 0:
+            print("No log entries to display")
+            return
+
+        print("-----+--------+---------------------+----------+------------+-----------+---------------------------------------------------")
+        print(" Nr  | Type   | Timestamp           | Hostname | Alert Type | Metric ID | Message                                           ")
+        print("-----+--------+---------------------+----------+------------+-----------+---------------------------------------------------")
         for log in logs:
             operation.print_log(log)
+        print("-----+--------+---------------------+----------+------------+-----------+---------------------------------------------------")
 
         print("Displayed %d log entries" % len(logs))
+
+    # Print an alert log entry
+    @staticmethod
+    def print_alert(alert):
+        nr, timestamp, hostname, alert_type, message = alert
+
+        # Fill attributes with spaces to align the output
+        nr = str(nr).rjust(4)
+        hostname = hostname.ljust(8)
+        alert_type = alert_type.ljust(10)
+
+        print(f"{nr} | {timestamp} | {hostname} | {alert_type} | {message}")
+
+    # Print alert log entries
+    @staticmethod
+    def print_alerts(alerts):
+        if len(alerts) == 0:
+            print("No alert entries to display")
+            return
+
+        print("-----+---------------------+----------+------------+--------------------------------------------")
+        print(" Nr  | Timestamp           | Hostname | Alert Type | Message                                    ")
+        print("-----+---------------------+----------+------------+--------------------------------------------")
+        for alert in alerts:
+            operation.print_alert(alert)
+        print("-----+---------------------+----------+------------+--------------------------------------------")
+
+        print("Displayed %d alert entries" % len(alerts))
+
+    # Print a metric log entry
+    @staticmethod
+    def print_metric(metric):
+        nr, timestamp, hostname, task_id, cpu_usage, ram_usage, \
+            bandwidth, jitter, packet_loss, latency, interface_stats = metric
+
+        # Fill attributes with spaces to align the output
+        nr              = str(nr).rjust(4)
+        hostname        = hostname.ljust(8)
+        task_id         = str(task_id).ljust(7)
+        cpu_usage       = str(cpu_usage).ljust(9)   if cpu_usage       is not None else "".ljust(9)
+        ram_usage       = str(ram_usage).ljust(9)   if ram_usage       is not None else "".ljust(9)
+        bandwidth       = str(bandwidth).ljust(9)   if bandwidth       is not None else "".ljust(9)
+        jitter          = str(jitter).ljust(8)      if jitter          is not None else "".ljust(8)
+        packet_loss     = str(packet_loss).ljust(8) if packet_loss     is not None else "".ljust(8)
+        latency         = str(latency).ljust(8)     if latency         is not None else "".ljust(8)
+        interface_stats = interface_stats.ljust(15) if interface_stats is not None else "".ljust(15)
+
+        print(f"{nr} | {timestamp} | {hostname} | {task_id} | {cpu_usage} | {ram_usage} | {bandwidth} | {jitter} | {packet_loss} | {latency} | {interface_stats}")
+
+    # Print metric log entries
+    @staticmethod
+    def print_metrics(metrics):
+        if len(metrics) == 0:
+            print("No metric entries to display")
+            return
+
+        print("-----+---------------------+----------+---------+-----------+-----------+-----------+----------+----------+----------+-----------------")
+        print(" Nr  | Timestamp           | Hostname | Task ID | CPU Usage | RAM Usage | Bandwidth | Jitter   | Pkt Loss | Latency  | Interface Stats ")
+        print("-----+---------------------+----------+---------+-----------+-----------+-----------+----------+----------+----------+-----------------")
+        for metric in metrics:
+            operation.print_metric(metric)
+        print("-----+---------------------+----------+---------+-----------+-----------+-----------+----------+----------+----------+-----------------")
+
+        print("Displayed %d metric entries" % len(metrics))
 
 
 class values:

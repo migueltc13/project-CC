@@ -1,15 +1,21 @@
 SELECT
     L.nr,
     L.timestamp,
-    L.hostname
+    L.hostname,
+    M.task_id,
     M.cpu_usage,
     M.ram_usage,
-    M.interface_stats,
     M.bandwidth,
     M.jitter,
     M.packet_loss,
-    M.latency
+    M.latency,
+    M.interface_stats
+FROM (
+    SELECT *
+    FROM log
+    WHERE type = 3
+    ORDER BY nr DESC
+    {LIMIT}
+) AS L
 INNER JOIN metric AS M ON L.metric_id = M.id
-WHERE L.type = 3
-ORDER BY L.nr DESC
-{LIMIT};
+ORDER BY L.nr ASC;
