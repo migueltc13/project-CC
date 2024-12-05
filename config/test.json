@@ -2,7 +2,7 @@
     "tasks": [
         {
             "task_id": 1,
-            "agent_id": "acer",
+            "agent_id": "n1",
             "frequency": 10,
             "tools_params": {
                 "iperf": {
@@ -13,7 +13,7 @@
                 },
                 "ping": {
                     "packet_count": 5,
-                    "destination": "google.com"
+                    "destination": "192.168.1.1"
                 }
             },
             "device_metrics": {
@@ -26,10 +26,10 @@
                     "tool": "iperf"
                 },
                 "jitter": {
-                    "tool": "ping"
+                    "tool": "iperf"
                 },
                 "packet_loss": {
-                    "tool": "ping"
+                    "tool": "iperf"
                 },
                 "latency": {
                     "tool": "ping"
