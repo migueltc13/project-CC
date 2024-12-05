@@ -361,6 +361,9 @@ Note que, em rotas deterioradas, a mensagem de \textit{End of Connection} pode n
 então é necessário determinar um tempo para um \textit{timeout} adequado as condições da rede,
 de forma a garantir a terminação da conexão com sucesso.
 
+\clearpage
+\newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
 \textbf{Retransmissão, Manuseamento de Pacotes Duplicados, Desfragmentação, Ordenação e Deteção de Erros}
 
 \begin{minipage}{\textwidth}
@@ -475,10 +478,10 @@ da sua conexão. O sistema desenvolvido suporta as seguintes métricas e alertas
     \end{itemize}
     \item \textbf{Métricas de rede}:
     \begin{itemize}
-        \item \textbf{\textit{Bandwidth}}: consumo de largura de banda, \textcolor{red}{em Mbps};
-        \item \textbf{\textit{Jitter}}: variação do atraso entre pacotes, \textcolor{red}{em milissegundos};
-        \item \textbf{\textit{Packet Loss}}: percentagem de pacotes perdidos;
-        \item \textbf{\textit{Latency}}: atraso entre o envio e a receção de pacotes, \textcolor{red}{em milissegundos}.
+        \item \textbf{\textit{Bandwidth}}: consumo de largura de banda, \textbf{em Mbps} (\textit{iperf} - TCP); 
+        \item \textbf{\textit{Jitter}}: variação do atraso entre pacotes, \textbf{em milissegundos}  (\textit{iperf} - UDP, \textit{ping});
+        \item \textbf{\textit{Packet Loss}}: percentagem de pacotes perdidos (\textit{iperf} - UDP, \textit{ping}); 
+        \item \textbf{\textit{Latency}}: atraso entre o envio e a receção de pacotes, \textbf{em milissegundos} (\textit{ping}). 
     \end{itemize}
     \item \textbf{Alertas}: aquando os valores obtidos excedem os limites definidos.
     \begin{itemize}
@@ -498,11 +501,6 @@ diferentes agentes executarem o mesmo teste com diferentes parâmetros.
 Outra consideração importante na utilização do \texttt{iperf3} é a necessidade de
 definir as tarefas de ambos os agentes, os quais em modo cliente ou servidor,
 de forma a que seja possível executar o teste.
-
-\textcolor{red}{
-    TODO falta indicar as opcoes das ferramentas para as métricas de rede. \\
-    Nota packet loss e jitter apenas funcionam com o iperf se estiver a usar UDP
-}
 
 \section{Bibliotecas Utilizadas}
 
@@ -533,6 +531,8 @@ as seguintes bibliotecas em \textit{Python3}:
     permitindo a obtenção de informações sobre esses dados entre sistemas.
 \end{itemize}
 
+\clearpage
+\newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
 
 \section{Detalhes Técnicos da Implementação}
 
@@ -590,8 +590,27 @@ são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
 %===============================================================================
 % BEGIN CONCLUSÕES E TRABALHO FUTURO
 %===============================================================================
+\newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
 
-\chapter{Conclusões e Trabalho Futuro}
+\chapter{Trabalho Futuro e Conclusões}
+
+\section{Trabalho Futuro}
+
+O sistema desenvolvido apresenta um grande potencial de expansão e melhoria, sendo
+possível adicionar novas funcionalidades e otimizações para melhorar a sua eficácia
+e desempenho. Algumas sugestões para trabalho futuro incluem:
+
+\begin{itemize}
+    \item \textbf{Encriptação de Mensagens}: adicionar encriptação de mensagens para
+    garantir a confidencialidade e integridade dos dados transmitidos entre o servidor
+    e os agentes;
+    \item \textbf{Análises Gráficas dos Resultados}: implementar a geração de análises
+    gráficas dos resultados obtidos, permitindo uma visualização mais intuitiva e
+    compreensível das métricas de desempenho;
+    \item \textbf{Reatribuição de Tarefas em \textit{Runtime}}: permitir a reatribuição
+    de tarefas em tempo de execução, para ajustar dinamicamente as tarefas dos agentes
+    com base nas condições da rede e nos requisitos do sistema.
+\end{itemize}
 
 \section{Conclusões}
 
@@ -612,16 +631,11 @@ monitorização e análise de tráfego de rede, adaptadas às necessidades do si
 
 Por conseguinte, o sistema desenvolvido demonstrou ser eficaz na monitorização e
 análise de tráfego de rede, permitindo a recolha de métricas de
-desempenho e a execução de tarefas de monitorização de forma eficiente e fiável.
+desempenho e a execução de tarefas de monitorização de forma eficiente e fiável,
+e a sua implementação permitiu a nossa perceção do quanto damos por garantidos
+os protocolos de comunicação que utilizamos diariamente.
 
-\section{Trabalho Futuro}
 
-\textcolor{red}{
-    TODO \\
-    Encriptação de mensagens (Nonce) \\
-    Gerar análises gráficas dos resultados \\
-    Reatribuição de tarefas em runtime
-}
 
 %===============================================================================
 % END CONCLUSÕES E TRABALHO FUTURO
