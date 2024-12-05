@@ -32,7 +32,7 @@ def main():
     agent_id = socket.gethostname()
 
     pool = ClientPool()
-    client_task = ClientTask()
+    client_task = ClientTask(verbose=args.verbose)
 
     tcp_client = ClientTCP(agent_id, server_ip)
     udp_client = ClientUDP(agent_id, server_ip, pool, client_task, verbose=args.verbose)
