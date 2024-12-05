@@ -1,15 +1,25 @@
 import iperf3
 import subprocess
 
+import constants as C
 
-# Iperf
-def iperf3_client(options, server, port, duration, bandwidth, protocol):
+
+# Iperf client udp
+# NOTE:
+# The bandwidth is in bits per second
+# The duration is in seconds
+# Options:
+# - jitter
+# - packet_loss
+def iperf3_client_udp(options, bind_address, server, port, duration, bandwidth):
     client = iperf3.Client()
     client.server_hostname = server
+    client.bind_address = bind_address
     client.port = port
     client.duration = duration
     client.bandwidth = bandwidth
-    client.protocol = protocol
+    client.protocol = "udp"
+    client.blksize = 32768  # MSS (Maximum Segment Size)
     iperf_result = client.run()
 
     # If the test failed, return None
@@ -19,33 +29,58 @@ def iperf3_client(options, server, port, duration, bandwidth, protocol):
     result = dict()
     for option in options:
         match option:
-            case "bandwidth":
-                result[option] = iperf_result.sent_Mbps
             case "jitter":
-                result[option] = 10  # TODO
-            case "packet_lost":
-                result[option] = 20  # TODO
-            case "latency":
-                result[option] = 30  # TODO
+                result[option] = round(iperf_result.jitter_ms,    C.DECIMAL_PRECISION)
+            case "packet_loss":
+                result[option] = round(iperf_result.lost_percent, C.DECIMAL_PRECISION)
 
     # if the result is empty, return None
-    if not result:
+    return result if result else None
+
+
+# Iperf client tcp (bandwidth)
+def iperf3_client_tcp(server, bind_address, port, duration):
+    client = iperf3.Client()
+    client.server_hostname = server
+    # client.bind_address = bind_address
+    client.port = port
+    client.duration = duration
+    client.protocol = "tcp"
+    iperf_result = client.run()
+
+    # If the test failed, return None
+    if iperf_result.error:
         return None
 
-    return result
+    return round(iperf_result.sent_Mbps, C.DECIMAL_PRECISION) if iperf_result.sent_Mbps else None
 
 
-def iperf3_server(port):
-    server = iperf3.Server()
-    server.port = port
-    server.run()
+def iperf3_server(bind_address, port, verbose, timeout=30):
+
+    command = f"iperf3 -s -B {bind_address} -p {port}"
+    try:
+        process = subprocess.Popen(
+            command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        try:
+            if timeout is None or timeout < 0:
+                timeout = 30
+
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            if verbose:
+                print("iperf3 server timed out. Terminating...")
+            process.terminate()
+            process.wait()  # Ensure the process exits
+    except Exception as e:
+        print(f"Error running iperf3 server: {e}")
 
 
 # Usage:
-# ping("google.com", ["jitter", "packet_lost", "latency"], packet_count=5)
+# ping("google.com", ["jitter", "packet_loss", "latency"], packet_count=5)
 # Options:
 # - jitter
-# - packet_lost
+# - packet_loss
 # - latency
 def ping(host, options, packet_count=10):
     command = f"ping -c {packet_count} {host} | tail -n 2"
@@ -69,10 +104,11 @@ def ping(host, options, packet_count=10):
     for option in options:
         match option:
             case "jitter":
-                results[option] = float(rtt_values[3])
+                results[option] = round(float(rtt_values[3]), C.DECIMAL_PRECISION)
             case "packet_loss":
-                results[option] = float(packet_loss)
+                results[option] = round(float(packet_loss),   C.DECIMAL_PRECISION)
             case "latency":
-                results[option] = float(rtt_values[1])
+                results[option] = round(float(rtt_values[1]), C.DECIMAL_PRECISION)
 
-    return results
+    # If the result is empty, return None
+    return results if results else None
