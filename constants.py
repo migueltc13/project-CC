@@ -27,3 +27,6 @@ WINDOW_PROBE_SLEEP_TIME = 10  # seconds
 
 # Timout for end of connection acknowledgments
 EOC_ACK_TIMEOUT = 10  # seconds
+
+# Decimal precision for floating point numbers
+DECIMAL_PRECISION = 4
