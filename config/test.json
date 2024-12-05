@@ -7,9 +7,11 @@
             "tools_params": {
                 "iperf": {
                     "is_client": true,
+                    "bind_address": "10.0.4.10",
                     "server_address": "10.0.4.7",
                     "port": 5001,
-                    "duration": 10
+                    "duration": 10,
+                    "bandwidth_bps": 1000000
                 },
                 "ping": {
                     "packet_count": 5,
@@ -50,9 +52,11 @@
             "task_id": 1001,
             "agent_id": "n2",
             "frequency": 10,
-            "iperf": {
-                "is_client": false,
-                "port": 5001
+            "tools_params": {
+                "iperf": {
+                    "is_client": false,
+                    "port": 5001
+                }
             },
             "link_metrics": {
                 "bandwidth": {
