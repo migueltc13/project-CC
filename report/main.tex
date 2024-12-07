@@ -543,7 +543,6 @@ as seguintes bibliotecas em \textit{Python3}:
 \end{itemize}
 
 \clearpage
-\newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
 
 \section{Detalhes Técnicos da Implementação}
 
@@ -581,7 +580,16 @@ são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
 
 \subsection{Base de Dados}
 
-A base de dados foi implementada em \textit{MySQL},
+A base de dados foi implementada em \textit{MySQL}, onde realizámos a criação das tabelas, bem como o seu
+povoamento e \textit{queries} para a obtenção de métricas e alertas. Estas são posteriormente utilizadas no
+ficheiro \texttt{database.py} para a inserção, organização e obtenção de dados.
+
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{img/db.png}
+    \captionof{figure}{Base de Dados do \textit{Network Monitoring System}}
+    \label{fig:database}
+\end{minipage}
 
 
 %===============================================================================
