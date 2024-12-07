@@ -38,14 +38,14 @@
                 }
             },
             "alertflow_conditions": {
-                "cpu_usage": 0.8,
+                "cpu_usage": 0.1,
                 "ram_usage": 0.9,
                 "interface_stats": {
                     "threshold": 2000,
                     "interfaces": ["wlp2s0", "eth1"]
                 },
-                "packet_loss": 5,
-                "jitter": 100
+                "packet_loss": 0,
+                "jitter": 0.0001
             }
         },
         {
