@@ -635,13 +635,71 @@ seis métricas:
 % BEGIN TESTES E RESULTADOS
 %===============================================================================
 
+\newgeometry{top=0cm}
 \chapter{Testes e Resultados}
 
-\textcolor{red}{
-    As demonstrações para situcoes normais e adversas, contam para este capítulo?
-    Ou teremos de fazer testes mais específicos? \\
-    Checksum, pacotes duplicados, retransmissão, defrag, controlo de fluxo, compatibilidade de versões...
-}
+Para além de testes automáticos para certas funcionalidades protocolares desenvolvidas,
+as quais serão abordadas na secção seguinte, foram realizados testes manuais com auxílio
+da ferramenta \textit{Wireshark} para a captura de pacotes, permitindo a análise
+de mensagens trocadas entre servidor e agentes.
+
+O teste apresentado foi realizado na seguinte topologia de rede virtual:
+
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/demo/topology.png}
+    \captionof{figure}{Topologia de Rede Utilizada para Testagem}
+    \label{fig:demo_topology}
+\end{minipage}
+
+Para tal foi inicializado o servidor com o ficheiro de configuração \texttt{config/demo.json},
+localizado na raíz do projeto, sendo este de tamanho reduzido para propósitos de demonstração,
+e o agente \texttt{PC2} como executor da respetiva tarefa, que testa a latência com o comando
+\textit{ping}, de somente três pacotes ICMP, para o \texttt{PC3} e verfica a utilização da CPU e RAM,
+enviando alertas se a utilização de memória exceder os 10\%.
+
+Deste modo obtemos o seguinte \textit{output} do servidor e do agente \texttt{PC2}:
+
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/demo/terminal_output.png}
+    \captionof{figure}{\textit{Output} do Servidor e do Agente PC2}
+    \label{fig:demo_terminal_output}
+\end{minipage}
+
+\newgeometry{top=1.25cm}
+
+Na seguinte captura de pacotes, é possível observar toda a troca de mensagens entre o servidor
+e o agente \texttt{PC2}, desde a primeira conexão, envio da tarefa, envio de métricas (UDP/\textit{NetTask})
+e alertas (TCP/\textit{AlertFlow}), até à requisição do término de conexão.
+
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/demo/wireshark_capture.png}
+    \captionof{figure}{Captura de Pacotes com o \textit{Wireshark}}
+    \label{fig:demo_wireshark_capture}
+\end{minipage}
+
+Na captura anterior, é possível observar a troca de mensagens sob o protocolo de
+camada de transporte, TCP, entre o agente \texttt{PC2} e o servidor, no qual na
+seguinte imagem é apresentado o conteúdo do payload de um alerta \textit{Alert Flow}
+enviado pelo agente \texttt{PC2} ao servidor, indicando que a utilização de memória
+excedeu os 10\%.
+
+\begin{minipage}{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/demo/wireshark_tcp_alertflow_data.png}
+    \captionof{figure}{Captura dos dados do alerta \textit{Alert Flow}}
+    \label{fig:demo_wireshark_tcp_alertflow_data}
+\end{minipage}
+
+Poderá consultar a captura efetuada em \texttt{topologies/demo.pcapng} na raíz do projeto.
+
+Como supramencionado, foram realizados testes automáticos para certas funcionalidades,
+das quais o cálculo de \textit{checksum} e a fragmentação e ordenação de pacotes. Para
+consultar os testes desenvolvidos, poderá aceder à diretoria \texttt{tests/} na raíz do projeto.
+
+\loadgeometry{default}
 
 %===============================================================================
 % END TESTES E RESULTADOS
@@ -650,6 +708,8 @@ seis métricas:
 %===============================================================================
 % BEGIN CONCLUSÕES E TRABALHO FUTURO
 %===============================================================================
+
+\newgeometry{top=0cm}
 
 \chapter{Trabalho Futuro e Conclusões}
 
@@ -668,8 +728,7 @@ para uma maior completude do sistema desenvolvido:
     a confidencialidade, integridade, autenticação e não repúdio do originador.
 
     \item \textbf{Reatribuição de Tarefas em \textit{Runtime}}: permitir a reatribuição
-    de tarefas em tempo de execução, para ajustar dinamicamente as tarefas dos agentes
-    com base nas condições da rede e nos requisitos do sistema. Tal poderia ser implementado
+    de tarefas em tempo de execução. Tal poderia ser implementado
     através do uso do identificador de uma tarefa, permitindo assim a sua adição e atualização,
     para além disso poderia ser adicionado ao \textit{User Interface} a possibilidade de
     adicionar tarefas, removê-las e atualizá-las. A nível protocolar, seria apenas necessário
@@ -677,8 +736,6 @@ para uma maior completude do sistema desenvolvido:
     a remoção de tarefas. Para a opção de atualização de tarefas, apenas seria necessário
     que o agente atualizasse a tarefa com o mesmo identificador.
 \end{itemize}
-
-\clearpage
 
 \section{Conclusões}
 
