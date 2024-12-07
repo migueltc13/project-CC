@@ -65,7 +65,7 @@ class Task(threading.Thread):
 
         # Device metrics
         device_metrics = task.get("device_metrics", None)
-        if device_metrics:
+        if device_metrics is not None:
             if device_metrics.get("cpu_usage", False):
                 metrics["cpu_usage"] = device.get_cpu_usage()
             if device_metrics.get("ram_usage", False):
@@ -112,7 +112,7 @@ class Task(threading.Thread):
                     bandwidth = link.iperf3_client_tcp(
                         server, bind_address, port, duration
                     )
-                    if bandwidth:
+                    if bandwidth is not None:
                         metrics["bandwidth"] = bandwidth
                 # Server mode
                 else:
@@ -143,7 +143,7 @@ class Task(threading.Thread):
                 )
 
             # Parse the iperf results
-            if iperf_results:
+            if iperf_results is not None:
                 for option, value in iperf_results.items():
                     metrics[option] = value
         # Server mode
@@ -194,7 +194,7 @@ class Task(threading.Thread):
                     cpu_usage = metrics["cpu_usage"]
 
                 # Determine if the CPU usage is above the threshold
-                if cpu_usage and cpu_usage >= alert_conditions["cpu_usage"]:
+                if cpu_usage is not None and cpu_usage >= alert_conditions["cpu_usage"]:
                     alerts[AlertFlow.CPU_USAGE] = {
                         "cpu_usage": cpu_usage,
                         "alert_condition": alert_conditions["cpu_usage"]
@@ -209,7 +209,7 @@ class Task(threading.Thread):
                     ram_usage = metrics["ram_usage"]
 
                 # Determine if the RAM usage is above the threshold
-                if ram_usage and ram_usage >= alert_conditions["ram_usage"]:
+                if ram_usage is not None and ram_usage >= alert_conditions["ram_usage"]:
                     alerts[AlertFlow.RAM_USAGE] = {
                         "ram_usage": ram_usage,
                         "alert_condition": alert_conditions["ram_usage"]
@@ -244,9 +244,27 @@ class Task(threading.Thread):
             # NOTE if the packet loss or the jitter is not measured in the metrics
             # the corresponding alert will never be triggered
 
-            # TODO Packet loss
+            # Packet loss
+            packet_loss_condition = alert_conditions.get("packet_loss")
+            if packet_loss_condition is not None:
+                # Determine if the packet loss is above the threshold
+                packet_loss_metric = metrics.get("packet_loss")
+                if packet_loss_metric is not None and packet_loss_metric >= packet_loss_condition:
+                    alerts[AlertFlow.PACKET_LOSS] = {
+                        "packet_loss": packet_loss_metric,
+                        "alert_condition": packet_loss_condition
+                    }
 
-            # TODO Jitter
+            # Jitter
+            jitter_condition = alert_conditions.get("jitter")
+            if jitter_condition is not None:
+                # Determine if the packet loss is above the threshold
+                jitter_metric = metrics.get("jitter")
+                if jitter_metric is not None and jitter_metric >= jitter_condition:
+                    alerts[AlertFlow.JITTER] = {
+                        "jitter": jitter_metric,
+                        "alert_condition": jitter_condition
+                    }
 
         # Send the task metrics and alerts to the server
         if metrics:
