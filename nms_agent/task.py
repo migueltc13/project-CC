@@ -90,17 +90,18 @@ class Task(threading.Thread):
 
         # Parse the iperf parameters based on the mode (client or server)
         iperf_params = tools_params.get("iperf", {})
-        is_client = iperf_params.get("is_client", False)
-        if is_client:
-            server = iperf_params.get("server", "0.0.0.0")
-            bind_address = iperf_params.get("bind_address", "0.0.0.0")
-            port = iperf_params.get("port", 10000)
-            duration = iperf_params.get("duration", 10)
-            bandwidth_bps = iperf_params.get("bandwidth_bps", 1_000_000)
-        else:
-            bind_address = iperf_params.get("bind_address", "0.0.0.0")
-            port = iperf_params.get("port", 10000)
-            iperf_server_timeout = iperf_params.get("server_timeout")
+        is_client = iperf_params.get("is_client", None)
+        if is_client is None:
+            if is_client:
+                server = iperf_params.get("server", "0.0.0.0")
+                bind_address = iperf_params.get("bind_address", "0.0.0.0")
+                port = iperf_params.get("port", 10000)
+                duration = iperf_params.get("duration", 10)
+                bandwidth_bps = iperf_params.get("bandwidth_bps", 1_000_000)
+            else:
+                bind_address = iperf_params.get("bind_address", "0.0.0.0")
+                port = iperf_params.get("port", 10000)
+                iperf_server_timeout = iperf_params.get("server_timeout")
 
         # Get the bandwidth if iperf is the tool (TCP)
         try:
@@ -131,27 +132,28 @@ class Task(threading.Thread):
         ]
 
         # Client mode (UDP)
-        if is_client:
-            if self.verbose:
-                print("Starting iperf UDP client")
-            # Execute the iperf command
-            iperf_results = None
-            if iperf_metrics_udp:
-                iperf_results = link.iperf3_client_udp(
-                    iperf_metrics_udp, bind_address, server,
-                    port, duration, bandwidth_bps
-                )
+        if is_client is not None:
+            if is_client:
+                if self.verbose:
+                    print("Starting iperf UDP client")
+                # Execute the iperf command
+                iperf_results = None
+                if iperf_metrics_udp:
+                    iperf_results = link.iperf3_client_udp(
+                        iperf_metrics_udp, bind_address, server,
+                        port, duration, bandwidth_bps
+                    )
 
-            # Parse the iperf results
-            if iperf_results is not None:
-                for option, value in iperf_results.items():
-                    metrics[option] = value
-        # Server mode
-        else:
-            if self.verbose:
-                print("Starting iperf UDP server")
-            link.iperf3_server(bind_address, port,
-                               verbose=self.verbose, timeout=iperf_server_timeout)
+                # Parse the iperf results
+                if iperf_results is not None:
+                    for option, value in iperf_results.items():
+                        metrics[option] = value
+            # Server mode
+            else:
+                if self.verbose:
+                    print("Starting iperf UDP server")
+                link.iperf3_server(bind_address, port,
+                                   verbose=self.verbose, timeout=iperf_server_timeout)
 
         ###
         # Ping Metrics
