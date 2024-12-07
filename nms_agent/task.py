@@ -44,7 +44,7 @@ class Task(threading.Thread):
             # Sleep for one second when no tasks are loaded
             # This way we save CPU cycles
             if len(self.loaded_tasks) == 0:
-                time.sleep(1)
+                time.sleep(5)
                 continue
             else:
                 task_threads = []
