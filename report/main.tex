@@ -331,13 +331,6 @@ de forma a não congestionar a rede e o recetor. Para esta medição dos \textit
 dos recetores, é, posteriormente, criada uma \textit{thread} responsável por enviar \textit{window probes} aos mesmos
 com \textit{window sizes} menores ou iguais a zero, de forma a que estes respondam com a sua janela de receção.
 
-\textbf{Análise Gráfica de Dados}
-
-Foi implementada uma funcionalidade de análise gráfica de dados, permitindo a visualização
-das diferentes métricas recolhidas e a sua evolução ao longo do tempo. Foi utilizada a biblioteca
-\textit{matplotlib} para a criação dos gráficos, e criado o ficheiro \texttt{analysis.py} para a execução
-desta funcionalidade. Segue-se exemplos de gráficos gerados:
-
 
 \clearpage
 \newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
@@ -591,6 +584,12 @@ ficheiro \texttt{database.py} para a inserção, organização e obtenção de d
     \label{fig:database}
 \end{minipage}
 
+\subsection{Análise Gráfica de Métricas}
+
+Foi implementada uma funcionalidade de análise gráfica de dados, permitindo a visualização
+das diferentes métricas recolhidas e a sua evolução ao longo do tempo. Foi utilizada a biblioteca
+\textit{matplotlib} para a criação dos gráficos, e criado o ficheiro \texttt{analysis.py} para a execução
+desta funcionalidade. Segue-se exemplos de gráficos gerados:
 
 %===============================================================================
 % END IMPLEMENTAÇÃO
