@@ -1,0 +1,28 @@
+{
+    "tasks": [
+        {
+            "task_id": 1,
+            "agent_id": "PC2",
+            "frequency": 20,
+            "tools_params": {
+                "ping": {
+                    "packet_count": 3,
+                    "destination": "10.0.7.10"
+                }
+            },
+            "device_metrics": {
+                "cpu_usage": true,
+                "ram_usage": true,
+                "interface_stats": ["eth0"]
+            },
+            "link_metrics": {
+                "latency": {
+                    "tool": "ping"
+                }
+            },
+            "alertflow_conditions": {
+                "ram_usage": 0.1
+            }
+        }
+    ]
+}
