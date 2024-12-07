@@ -509,27 +509,23 @@ de forma a que seja possível executar o teste.
 \section{Bibliotecas Utilizadas}
 
 Para a implementação do \textbf{\textit{Network Monitoring System}}, foram utilizadas
-as seguintes bibliotecas em \textit{Python3}:
+as seguintes bibliotecas \textit{Python}:
 
 \begin{itemize}
     \item \textbf{\texttt{socket}}: para a comunicação entre o servidor e os agentes,
-    permitindo a troca de mensagens entre os sistemas;
-    \item \textbf{\textit{threading}}: para a execução \textit{multi threading} de tarefas, servidores TCP e UDP,
+    permitindo a troca de mensagens entre os sistemas, tanto em TCP como em UDP;
+    \item \textbf{\texttt{threading}}: para a execução \textit{multi threading} de tarefas, servidores TCP e UDP,
     retransmições de pacotes, entre outros, permitindo multiprocessamento a ambos os agentes como o servidor;
-    \item \textbf{\textit{json}}: para a codificação e descodificação de mensagens em formato JSON,
-    permitindo a transmissão de dados entre o servidor e os agentes;
-    \item \textbf{\texttt{os}}: para a execução de comandos do sistema operativo, permitindo a
-    recolha de métricas de desempenho dos dispositivos;
-    \item \textbf{\texttt{sys}}: para a obtenção de argumentos passados na linha de comandos,
-    permitindo a definição de parâmetros de execução dos executáveis;
-    \item \textbf{\texttt{matplotlib}}: para a criação de gráficos, permitindo a visualização
-    das métricas recolhidas e a sua evolução ao longo do tempo.
+    \item \textbf{\texttt{json}}: para a codificação e descodificação de \textit{payloads} de pacotes em formato JSON;
     \item \textbf{\texttt{psutil}}: para a recolha de métricas de desempenho dos dispositivos,
     permitindo a obtenção de informações sobre a utilização da CPU, memória RAM e interfaces de rede;
-\item \textbf{\textit{iperf3}}: \textit{iperf wrapper} para a execução de testes de largura de banda, \textit{jitter} e \textit{packet loss},
-    permitindo a obtenção facilitada desses dados aquando o \textit{iperf} é executado como cliente;
-\item \textbf{\textit{subprocess}}: utilizado para correr os comando nativos \textit{ping} e \textit{iperf3} (modo servidor),
+    \item \textbf{\texttt{iperf3}}: \textit{iperf wrapper} para a execução de testes de largura de banda,
+    \textit{jitter} e \textit{packet loss}, permitindo a obtenção facilitada desses dados aquando
+    o \textit{iperf} é executado como cliente;
+    \item \textbf{\texttt{subprocess}}: utilizado para correr os comando nativos \textit{ping} e \textit{iperf3} (modo servidor),
     permitindo obter o \textit{return code}, \textit{stdout} e \textit{stderr} do comando.
+    \item \textbf{\texttt{matplotlib}}: para a criação de gráficos, permitindo a visualização
+    das métricas recolhidas e a sua evolução ao longo do tempo.
 \end{itemize}
 
 \clearpage
@@ -539,36 +535,38 @@ as seguintes bibliotecas em \textit{Python3}:
 \subsection{Definição de Constantes}
 
 Ao longo da implementação, foram definidas várias constantes, que permitem a
-configuração do sistema de forma mais simples e centralizada. Estas constantes
-são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
+configuração do sistema. Estas constantes são definidas no ficheiro \texttt{constants.py},
+e são as seguintes:
+
 \begin{itemize}
+    \item \textbf{\texttt{ENCODING}}: a definição de codificação de mensagens, pré-definida como \textbf{\textit{UTF-8}},
+    sendo esta configurável, para, por exemplo, \textit{ASCII}, \textit{ISO-8859-1}, entre outras;
+    \item \textbf{\texttt{BUFFER\_SIZE}}: o tamanho máximo de um pacote, definido como \textbf{1500 \textit{bytes}},
+    este, o valor máximo para o \textit{Maximum Transmission Unit} (MTU) de uma rede Ethernet;
+    \item \textbf{\texttt{SO\_NO\_CHECK}}: este valor permite desativar o cálculo do \textit{checksum} em
+    pacotes UDP, permitindo um controlo de erros personalizado;
     \item \textbf{\texttt{RETRANSMIT\_SLEEP\_TIME}}: intervalo de tempo, em segundos, para retransmitir pacotes não confirmados.
     Definiu-se como \textbf{5 segundos}, permitindo uma rápida recuperação de pacotes perdidos sem causar sobrecarga excessiva na rede.
-    A definição deste valor teve em conta que a retransmissão de pacotes precisa de ter um tempo de resposta curto para garantir
+    A definição deste valor teve em conta que a retransmissão de pacotes precisa de um tempo de resposta curto para garantir
     o desempenho, porém, não tão curto como, por exemplo, nos serviços de \textit{streaming}, onde a latência é crítica.
-    Manter este valor significamente maior reduz a sobrecarga computacional e de tráfego de rede.
-    \item \textbf{\texttt{INITIAL\_WINDOW\_SIZE}}: o \textit{window size} foi definido como sendo \textbf{32 pacotes}.
-    Este valor é suficientemente para lidar com tráfego usual da aplicação, sem causar congestionamento na rede.
-    \item \textbf{\texttt{MAX\_FRAGMENT\_SIZE}}: definimos o tamanho máximo de um fragmento como sendo \textbf{1000 \textit{bytes}},
-    para garantir que cada fragmento é pequeno o suficiente para incluir sobrecarga adicional (cabeçalhos de protocolo) sem exceder o
-    \texttt{BUFFER\_SIZE}.
-    \item \textbf{\texttt{MAX\_MESSAGE\_SIZE}}: definimos o tamanho máximo da mensagem como sendo \textbf{10000 \textit{bytes}},
-    pois este valor é suficiente para transmitir mensagens razoavelmente grandes, enquanto mantém um número manejável de fragmentos ao dividi-las.
-    Caso alcance este valor, a mensagem seria fragmentada em 10 fragmentos de 1000 \textit{bytes} cada.
-    \item \textbf{\texttt{MAX\_WINDOW\_SIZE}}: o \textit{window size} máximo é o dobro do seu tamanho inicial - \textbf{64 pacotes}.
-    Este valor foi escolhido para permitir uma expansão moderada da janela de receção, sem permitir que a esta cresça indefinidamente.
-    \item \textbf{\texttt{WINDOW\_PROBE\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de verificar o \textit{window size}.
-    Definiu-se como sendo \textbf{10 segundos}, permitindo uma verificação regular da janela de receção sem causar sobrecarga excessiva na rede.
-    \item \textbf{\texttt{EOC\_ACK\_TIMEOUT}}: tempo máximo de espera para o recebimento de confirmações de término de conexão, em segundos.
-    O intervalo foi definido como \textbf{10 segundos} para garantir que as conexões sejam encerradas rapidamente, sem causar atrasos
-    desnecessários na execução do sistema, nem permitir que as conexões sejam encerradas prematuramente.
+    Manter este valor significamente maior reduz a sobrecarga computacional e de tráfego de rede, sendo ótimo para a aplicação desenvolvida;
+    \item \textbf{\texttt{INITIAL\_WINDOW\_SIZE}}: o \textit{window size} inicial foi definido como \textbf{32 pacotes}.
+    Este valor é suficiente para lidar com tráfego usual da aplicação, sem causar congestionamento na rede;
+    \item \textbf{\texttt{WINDOW\_PROBE\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de enviar \textit{window probes}
+    a agentes com \textit{window sizes} menores ou iguais a zero.
+    Definiu-se como \textbf{5 segundos}, permitindo uma verificação regular da janela de receção sem causar sobrecarga excessiva na rede;
+    \item \textbf{\texttt{EOC\_ACK\_TIMEOUT}}: tempo máximo de espera, em segundos, para o recebimento de confirmações de término de conexão.
+    O intervalo foi definido como três vezes o tempo de retransmissão para garantir três tentativas de retransmissão antes de encerrar a conexão.
 \end{itemize}
 
 \subsection{Base de Dados}
 
-A base de dados foi implementada em \textit{MySQL}, onde realizámos a criação das tabelas, bem como o seu
-povoamento e \textit{queries} para a obtenção de métricas e alertas. Estas são posteriormente utilizadas no
-ficheiro \texttt{database.py} para a inserção, organização e obtenção de dados.
+A base de dados foi implementada em \textit{MySQL}, onde se realizou a criação das tabelas,
+bem como o seu povoamento e \textit{queries} para a obtenção e inserção de \textit{logs},
+métricas e alertas. Estes ficheiros \texttt{sql} são posteriormente utilizados no módulo
+\texttt{database.py} para as respetivas operações. O servidor, ao receber as métricas, alertas
+e novas conexões, guarda estes dados na base de dados, permitindo a análise e visualização
+dos mesmos.
 
 \begin{minipage}{\textwidth}
     \centering
@@ -577,52 +575,54 @@ ficheiro \texttt{database.py} para a inserção, organização e obtenção de d
     \label{fig:database}
 \end{minipage}
 
+\clearpage
+
 \subsection{Análise Gráfica de Métricas}
 
-Foi implementada uma funcionalidade de análise gráfica de dados, permitindo a visualização
-das diferentes métricas recolhidas e a sua evolução ao longo do tempo. Foi utilizada a biblioteca
-\textit{matplotlib} para a criação dos gráficos, e criado o ficheiro \texttt{analysis.py} para a execução
-desta funcionalidade. Segue-se exemplos de gráficos gerados:
+Para a funcionalidade de análise gráfica de métricas, foi criado o executável
+\texttt{analysis.py} que, após a recolha de métricas da base de dados, permite
+a criação e visualização de gráficos. Este, permite a visualização das seguintes
+seis métricas:
 
-\begin{minipage}{0.49\textwidth}
+\begin{minipage}{.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/analysis/bandwidth.png}
-    \captionof{figure}{Gráfico de \textit{Bandwidth}}
+    \captionof{figure}{\textit{Bandwidth}}
     \label{fig:bandwidth}
 \end{minipage}
 \hfill
-\begin{minipage}{0.49\textwidth}
+\begin{minipage}{.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/analysis/packet_loss.png}
-    \captionof{figure}{Gráfico de \textit{Packet Loss}}
+    \captionof{figure}{\textit{Packet Loss}}
     \label{fig:packet_loss}
 \end{minipage}
 
-\begin{minipage}{0.49\textwidth}
+\begin{minipage}{.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/analysis/jitter.png}
-    \captionof{figure}{Gráfico de \textit{Jitter}}
+    \captionof{figure}{\textit{Jitter}}
     \label{fig:jitter}
 \end{minipage}
 \hfill
-\begin{minipage}{0.49\textwidth}
+\begin{minipage}{.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/analysis/latency.png}
-    \captionof{figure}{Gráfico de Latência}
+    \captionof{figure}{\textit{Latency}}
     \label{fig:latency}
 \end{minipage}
 
-\begin{minipage}{0.49\textwidth}
+\begin{minipage}{.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/analysis/cpu_usage.png}
-    \captionof{figure}{Gráfico de Utilização da CPU}
+    \captionof{figure}{\textit{CPU Usage}}
     \label{fig:cpu_usage}
 \end{minipage}
 \hfill
-\begin{minipage}{0.49\textwidth}
+\begin{minipage}{.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/analysis/ram_usage.png}
-    \captionof{figure}{Gráfico de Utilização de RAM}
+    \captionof{figure}{\textit{RAM Usage}}
     \label{fig:ram_usage}
 \end{minipage}
 
@@ -655,9 +655,8 @@ desta funcionalidade. Segue-se exemplos de gráficos gerados:
 
 \section{Trabalho Futuro}
 
-O sistema desenvolvido apresenta um grande potencial de expansão e melhoria, sendo
-possível adicionar novas funcionalidades e otimizações para melhorar a sua eficácia
-e desempenho. Algumas sugestões para trabalho futuro incluem:
+Como trabalho futuro, propõe-se a implementação das seguintes funcionalidades,
+para uma maior completude do sistema desenvolvido:
 
 \begin{itemize}
     \item \textbf{Encriptação de Mensagens}: adicionar encriptação de
@@ -670,11 +669,16 @@ e desempenho. Algumas sugestões para trabalho futuro incluem:
 
     \item \textbf{Reatribuição de Tarefas em \textit{Runtime}}: permitir a reatribuição
     de tarefas em tempo de execução, para ajustar dinamicamente as tarefas dos agentes
-    com base nas condições da rede e nos requisitos do sistema. Isto seria incorporado
-    através da implementação com a utilização de um sistema de mensagens de controlo
-    entre o servidor e os agentes, permitindo a reconfiguração das tarefas em execução
-    sem a necessidade de reiniciar o sistema.
+    com base nas condições da rede e nos requisitos do sistema. Tal poderia ser implementado
+    através do uso do identificador de uma tarefa, permitindo assim a sua adição e atualização,
+    para além disso poderia ser adicionado ao \textit{User Interface} a possibilidade de
+    adicionar tarefas, removê-las e atualizá-las. A nível protocolar, seria apenas necessário
+    adicionar um novo tipo de mensagem, por exemplo, \textit{Remove Task}, que permitiria
+    a remoção de tarefas. Para a opção de atualização de tarefas, apenas seria necessário
+    que o agente atualizasse a tarefa com o mesmo identificador.
 \end{itemize}
+
+\clearpage
 
 \section{Conclusões}
 
@@ -688,16 +692,11 @@ vários conceitos e técnicas de comunicação, como a fragmentação de pacotes
 de pacotes perdidos, controlo de fluxo, deteção de erros e ordenação de pacotes, garantindo
 a fiabilidade e robustez do sistema.
 
-A utilização de protocolos aplicacionais personalizados, como o \textit{AlertFlow} e o
-\textit{NetTask}, permitiu a implementação de funcionalidades específicas para a
-monitorização e análise de tráfego de rede, adaptadas às necessidades do sistema.
-
-
 Por conseguinte, o sistema desenvolvido demonstrou ser eficaz na monitorização e
 análise de tráfego de rede, permitindo a recolha de métricas de
 desempenho, a sua análise gráfica e a execução de tarefas de monitorização de forma
-eficiente e fiável, e a sua implementação permitiu a nossa perceção do quanto damos por garantidos
-os protocolos de comunicação que utilizamos diariamente.
+eficiente e fiável. A sua implementação permitiu a atualização da nossa perceção
+do quanto damos por garantidos os protocolos de comunicação que utilizamos diariamente.
 
 %===============================================================================
 % END CONCLUSÕES E TRABALHO FUTURO
