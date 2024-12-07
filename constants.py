@@ -23,10 +23,10 @@ INITIAL_WINDOW_SIZE = 32  # packets
 RETRANSMIT_SLEEP_TIME = 5  # seconds
 
 # Time to sleep before probing the window size
-WINDOW_PROBE_SLEEP_TIME = 10  # seconds
+WINDOW_PROBE_SLEEP_TIME = 5  # seconds
 
 # Timout for end of connection acknowledgments
-EOC_ACK_TIMEOUT = 10  # seconds
+EOC_ACK_TIMEOUT = RETRANSMIT_SLEEP_TIME * 3  # seconds
 
 # Decimal precision for floating point numbers
 DECIMAL_PRECISION = 4
