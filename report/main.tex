@@ -46,6 +46,9 @@
     centralizado e vários agentes distribuídos, permitindo a execução de tarefas
     de monitorização, com a respetiva recolha de métricas de desempenho e envio
     de alertas previamente configurados.
+    Adicionalmente, foi desenvolvida a análise de dados recolhidos e a apresentação
+    dos mesmos em formato gráfico, permitindo a visualização do desempenho da rede
+    e dos dispositivos monitorizados.
 
     No sistema desenvolvido implementaram-se dois protocolos aplicacionais: \\
     \textbf{\textit{AlertFlow}}:
@@ -130,7 +133,7 @@ comunicação de alertas de
 agentes para o servidor, sendo assim utilizado monodirecionalmente. O envio de
 alertas ocorre quando certas condições de monitorização definidas são excedidas,
 sendo estas previamente indicadas pelo servidor, via o protocolo \textit{NetTask}.
-Este protocolo é orientado à conexão, ou seja cada vez que um agente envia um alerta,
+Este protocolo é orientado à conexão, ou seja, cada vez que um agente envia um alerta,
 é estabelecida uma nova conexão TCP com o servidor, sendo esta terminada após o envio
 da mesma.
 
@@ -218,7 +221,7 @@ comportamento do protocolo em situações normais e adversas.
             \item [\textbf{2}]  \textbf{\textit{Send Tasks}}:              envio de tarefas pelo servidor;
             \item [\textbf{3}]  \textbf{\textit{Send Metrics}}:            envio de resultados de tarefas pelos agentes;
             \item [\textbf{4}]  \textbf{\textit{EOC (End of Connection)}}: terminação de conexões nos dois sentidos;
-            \item [\textbf{*}] \textbf{\textit{Reserved}}:                reservado para futuras extensões. (de 5 a 7);
+            \item [\textbf{*}] \textbf{\textit{Reserved}}:                reservado para futuras extensões (de 5 a 7);
         \end{itemize}
     \item \textbf{\textit{Window Size}}        (2 \textit{bytes}): indica o tamanho da janela de receção,
         para o controlo de fluxo;
@@ -245,8 +248,8 @@ A retransmissão de pacotes perdidos é efetuada quando o emissor não recebe um
 \textit{acknowledgement} de um pacote enviado, após um determinado intervalo de
 tempo. Para a concretização desta funcionalidade, o emissor guarda todos os pacotes
 enviados em memória, reenviando os pacotes não confirmados após o intervalo de tempo
-definido no fichero \texttt{constants.py} sobre a nomenclatura \texttt{RETRANSMIT\_SLEEP\_TIME},
-os pacotes mantém o cabeçalho original, sendo apenas ativada a \textit{flag RET}.
+definido no fichero \texttt{constants.py} sobre a nomenclatura \texttt{RETRANSMIT\_SLEEP\_TIME}.
+Os pacotes mantém o cabeçalho original, sendo apenas ativada a \textit{flag RET}.
 
 
 \textbf{(Des)Fragmentação e Ordenação de Pacotes}
@@ -256,7 +259,7 @@ máximo permitido, sendo este tamanho predefinido para 1500 \textit{bytes}, no
 ficheiro \texttt{constants.py} sobre a nomenclatura \texttt{BUFFER\_SIZE},
 uma vez que este é o valor máximo para o \textit{Maximum Transmission Unit} (MTU).
 
-Na fragmentação de pacotes os dados da mensagem (campo \textit{Data}) é dividido em fragmentos,
+Na fragmentação de pacotes, os dados da mensagem (campo \textit{Data}) são divididos em fragmentos,
 de forma a que, com adição do cabeçalho, o tamanho total do pacote não exceda o tamanho
 máximo permitido. Os primeiros fragmentos são marcados com a \textit{flag MF},
 com exceção do último fragmento, indicando que não existem mais fragmentos a serem enviados.
@@ -270,8 +273,8 @@ se um pacote é ou não um fragmento, é verificado se a \textit{flag MF} está 
 e se o \textit{Message Identifier} é igual ao número de sequência do pacote. Se tal
 não se verificar, o pacote é guardado em memória até que todos os fragmentos sejam
 recebidos, ou seja, devem existir todos os fragmentos tal que o seu número de sequência
-esteja entre os seus \textit{Message Identifiers} e o número de sequência do último fragmento,
-este procedimento garante que a mensagem é desfragmentada apenas quando todos os
+esteja entre os seus \textit{Message Identifiers} e o número de sequência do último fragmento.
+Este procedimento garante que a mensagem é desfragmentada apenas quando todos os
 fragmentos são recebidos, uma vez que a ordem de chegada destes não é garantida.
 
 Uma vez que todos os fragmentos são recebidos, estes são ordenados pelo número de
@@ -287,7 +290,7 @@ sejam distinguidos, garantindo a integridade dos pacotes reconstruídos.
 
 A deteção e manuseamento de pacotes duplicados, tal como na (des)fragmentação
 e ordenação de pacotes, recorre ao \textit{Sequence Number} da mensagem.
-O recetor mantém um registo dos números de sequência pacotes recebidos para a
+O recetor mantém um registo dos números de sequência de pacotes recebidos para a
 deteção de pacotes duplicados, descartando pacotes que já tenham sido recebidos anteriormente, e
 reenviando um \textit{acknowledgement} ao emissor para confirmar a receção do pacote
 de forma a evitar futuras retransmissões desnecessárias.
@@ -329,7 +332,16 @@ de forma a não congestionar a rede e o recetor. Para esta medição dos \textit
 dos recetores, é, posteriormente, criada uma \textit{thread} responsável por enviar \textit{window probes} aos mesmos
 com \textit{window sizes} menores ou iguais a zero, de forma a que estes respondam com a sua janela de receção.
 
+\textbf{Análise Gráfica de Dados}
 
+Foi implementada uma funcionalidade de análise gráfica de dados, permitindo a visualização
+das diferentes métricas recolhidas e a sua evolução ao longo do tempo. Foi utilizada a biblioteca
+\textit{matplotlib} para a criação dos gráficos, e criado o ficheiro \texttt{?.py} para a execução
+desta funcionalidade. Segue-se exemplos de gráficos gerados:
+
+
+\clearpage
+\newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
 \subsection{Diagramas de Sequência}
 
 \textbf{\textit{First Connection}}
@@ -362,8 +374,6 @@ então é necessário determinar um tempo para um \textit{timeout} adequado as c
 de forma a garantir a terminação da conexão com sucesso.
 
 \clearpage
-\newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
-
 \textbf{Retransmissão, Manuseamento de Pacotes Duplicados, Desfragmentação, Ordenação e Deteção de Erros}
 
 \begin{minipage}{\textwidth}
@@ -518,7 +528,9 @@ as seguintes bibliotecas em \textit{Python3}:
     \item \textbf{\textit{os}}: para a execução de comandos do sistema operativo, permitindo a
     recolha de métricas de desempenho dos dispositivos;
     \item \textbf{\textit{sys}}: para a obtenção de argumentos passados na linha de comandos,
-    permitindo a definição de parâmetros de execução dos executáveis.
+    permitindo a definição de parâmetros de execução dos executáveis;
+    \item \textbf{\textit{matplotlib}}: para a criação de gráficos, permitindo a visualização
+    das métricas recolhidas e a sua evolução ao longo do tempo.
 \end{itemize}
 
 \subsection{Bibliotecas Específicas:}
@@ -592,7 +604,6 @@ são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
 %===============================================================================
 % BEGIN CONCLUSÕES E TRABALHO FUTURO
 %===============================================================================
-\newgeometry{left=2.5cm, right=2.5cm, top=2.0cm, bottom=2.0cm}
 
 \chapter{Trabalho Futuro e Conclusões}
 
@@ -605,15 +616,18 @@ e desempenho. Algumas sugestões para trabalho futuro incluem:
 \begin{itemize}
     \item \textbf{Encriptação de Mensagens}: adicionar encriptação de
     mensagens para garantir a confidencialidade e integridade dos dados transmitidos entre
-    o servidor e os agentes. Além disso, incorporar o uso de \textit{nonces}, aprendidos nas aulas teóricas,
-    na encriptação como forma de prevenir (\textit{replay attacks}), assegurando que cada mensagem
-    transmitida seja única e protegida contra reutilização por agentes mal-intencionados;
-    \item \textbf{Análises Gráficas dos Resultados}: implementar a geração de análises
-    gráficas dos resultados obtidos, permitindo uma visualização mais intuitiva e
-    compreensível das métricas de desempenho;
+    o servidor e os agentes, através da incorporação do uso de \textit{nonces}
+    de forma a prevenir ataques \textit{Man-In-The-Middle}. Adicionalmente, uma forma de 
+    garantir a autenticidade das mensagens seria a utilização de uma autoridade de certificação
+    para a emissão de certificados digitais para os agentes e o servidor, garantindo totalmente
+    a confidencialidade, integridade, autenticação e não repúdio do originador.
+
     \item \textbf{Reatribuição de Tarefas em \textit{Runtime}}: permitir a reatribuição
     de tarefas em tempo de execução, para ajustar dinamicamente as tarefas dos agentes
-    com base nas condições da rede e nos requisitos do sistema.
+    com base nas condições da rede e nos requisitos do sistema. Isto seria incorporado
+    através da implementação com a utilização de um sistema de mensagens de controlo
+    entre o servidor e os agentes, permitindo a reconfiguração das tarefas em execução
+    sem a necessidade de reiniciar o sistema.
 \end{itemize}
 
 \section{Conclusões}
@@ -635,8 +649,8 @@ monitorização e análise de tráfego de rede, adaptadas às necessidades do si
 
 Por conseguinte, o sistema desenvolvido demonstrou ser eficaz na monitorização e
 análise de tráfego de rede, permitindo a recolha de métricas de
-desempenho e a execução de tarefas de monitorização de forma eficiente e fiável,
-e a sua implementação permitiu a nossa perceção do quanto damos por garantidos
+desempenho, a sua análise gráfica e a execução de tarefas de monitorização de forma
+eficiente e fiável, e a sua implementação permitiu a nossa perceção do quanto damos por garantidos
 os protocolos de comunicação que utilizamos diariamente.
 
 
@@ -649,22 +663,6 @@ os protocolos de comunicação que utilizamos diariamente.
 % BEGIN REFERÊNCIAS
 %===============================================================================
 
-% %% Change biblibography name from “Bibliografia” to “Referências”
-% \renewcommand\bibname{Referências}
-%
-% %% https://www.overleaf.com/learn/latex/bibliography_management_with_bibtex
-% \begin{thebibliography}{9}
-%
-% \bibitem{DatabaseSystems}
-% Connolly, T., \& Begg, C. (2015). Database Systems: Example (6th ed.). Pearson Education. London, UK.
-%
-% % \bibitem{MySQLManual}
-% % MySQL 8.0 Reference Manual (2024). \href{https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html}{MySQL 8.0 Reference Manual: Data Type Storage Requirements}. MySQL, Oracle.
-%
-% \end{thebibliography}
-%
-% %% Add bibliografia to index
-% \addcontentsline{toc}{chapter}{Bibliografia}
 
 %===============================================================================
 % END REFERÊNCIAS
