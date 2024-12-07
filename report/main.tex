@@ -333,7 +333,7 @@ com \textit{window sizes} menores ou iguais a zero, de forma a que estes respond
 
 
 \clearpage
-\newgeometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
 \subsection{Diagramas de Sequência}
 
 \textbf{\textit{First Connection}}
@@ -393,6 +393,7 @@ de forma a garantir a terminação da conexão com sucesso.
     O servidor reenvia o ACK para evitar retransmissões desnecessárias.
 \end{enumerate}
 
+\clearpage
 
 \textbf{Controlo de Fluxo}
 
@@ -466,30 +467,31 @@ options:
 
 \section{Ficheiro de Configuração}
 
-O ficheiro de configuração permite a definição de tarefas aos agentes pelo servidor,
-este é carregado no início da execução do servidor, e é enviado a cada agente aquando
-da sua conexão. O sistema desenvolvido suporta as seguintes métricas e alertas:
+O ficheiro de configuração permite a definição de tarefas aos agentes pelo servidor.
+Este é carregado no início da execução do servidor, e é enviado a cada agente, aquando
+da sua conexão, as tarefas as quais este deve executar.
+O sistema desenvolvido suporta as seguintes métricas e alertas:
 
 \begin{itemize}
     \item \textbf{Métricas de dispositivo}:
     \begin{itemize}
         \item \textbf{\textit{CPU Usage}}: percentagem de utilização da CPU;
         \item \textbf{\textit{RAM Usage}}: percentagem de utilização da memória RAM;
-        \item \textbf{\textit{Interfaces stats}}: número de pacotes por segundo,
+        \item \textbf{\textit{Interfaces Stats}}: número de pacotes por segundo,
             para cada interface de rede definida.
     \end{itemize}
     \item \textbf{Métricas de rede}:
     \begin{itemize}
-        \item \textbf{\textit{Bandwidth}}: consumo de largura de banda, \textbf{em Mbps} (\textit{iperf} - TCP); 
-        \item \textbf{\textit{Jitter}}: variação do atraso entre pacotes, \textbf{em milissegundos}  (\textit{iperf} - UDP, \textit{ping});
-        \item \textbf{\textit{Packet Loss}}: percentagem de pacotes perdidos (\textit{iperf} - UDP, \textit{ping}); 
-        \item \textbf{\textit{Latency}}: atraso entre o envio e a receção de pacotes, \textbf{em milissegundos} (\textit{ping}). 
+        \item \textbf{\textit{Bandwidth}}: consumo de largura de banda, em \textit{Mbps} (\textit{iperf} via TCP);
+        \item \textbf{\textit{Jitter}}: variação de atraso, em milissegundos (\textit{iperf} via UDP, \textit{ping});
+        \item \textbf{\textit{Packet Loss}}: percentagem de pacotes perdidos (\textit{iperf} via UDP, \textit{ping});
+        \item \textbf{\textit{Latency}}: atraso entre o envio e a receção de pacotes, em milissegundos (\textit{ping}).
     \end{itemize}
     \item \textbf{Alertas}: aquando os valores obtidos excedem os limites definidos.
     \begin{itemize}
         \item \textbf{\textit{CPU Usage}};
         \item \textbf{\textit{RAM Usage}};
-        \item \textbf{\textit{Interfaces stats}};
+        \item \textbf{\textit{Interfaces Stats}};
         \item \textbf{\textit{Packet Loss}};
         \item \textbf{\textit{Jitter}}.
     \end{itemize}
@@ -513,8 +515,8 @@ as seguintes bibliotecas em \textit{Python3}:
 \begin{itemize}
     \item \textbf{\textit{socket}}: para a comunicação entre o servidor e os agentes,
     permitindo a troca de mensagens entre os sistemas;
-    \item \textbf{\textit{threading}}: para a execução de tarefas em \textit{threads} separadas,
-    permitindo a execução de tarefas em paralelo;
+    \item \textbf{\textit{threading}}: para a execução \textit{multi threading} de tarefas, servidores TCP e UDP,
+    retransmições de pacotes, entre outros, permitindo multiprocessamento a ambos os agentes como o servidor;
     \item \textbf{\textit{json}}: para a codificação e descodificação de mensagens em formato JSON,
     permitindo a transmissão de dados entre o servidor e os agentes;
     \item \textbf{\textit{os}}: para a execução de comandos do sistema operativo, permitindo a
@@ -529,35 +531,35 @@ as seguintes bibliotecas em \textit{Python3}:
 \begin{itemize}
     \item \textbf{\textit{psutil}}: para a recolha de métricas de desempenho dos dispositivos,
     permitindo a obtenção de informações sobre a utilização da CPU, memória RAM e interfaces de rede;
-    \item \textbf{\textit{iperf3}}: para a execução de testes de largura de banda e \textit{jitter},
-    permitindo a obtenção de informações sobre esses dados entre sistemas.
-    \item \textbf{\textit{subprocess}}: utilizado para correr o comando nativo \textit{ping}, obtendo
-    o \textit{return code} e o \textit{output} do comando.
+\item \textbf{\textit{iperf3}}: \textit{iperf wrapper} para a execução de testes de largura de banda, \textit{jitter} e \textit{packet loss},
+    permitindo a obtenção facilitada desses dados aquando o \textit{iperf} é executado como cliente;
+\item \textbf{\textit{subprocess}}: utilizado para correr os comando nativos \textit{ping} e \textit{iperf3} (modo servidor),
+    permitindo obter o \textit{return code}, \textit{stdout} e \textit{stderr} do comando.
 \end{itemize}
 
 \clearpage
 
 \section{Detalhes Técnicos da Implementação}
 
-\subsection{Constantes escolhidas}
+\subsection{Definição de Constantes}
 
 Ao longo da implementação, foram definidas várias constantes, que permitem a
 configuração do sistema de forma mais simples e centralizada. Estas constantes
 são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
 \begin{itemize}
-    \item \textbf{\texttt{RETRANSMIT\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de retransmitir pacotes não confirmados.
-    Definimos como sendo \textbf{5 segundos}, permitindo uma rápida recuperação de pacotes perdidos sem causar sobrecarga excessiva na rede.
-    Este valor foi escolhido tendo em conta que a retransmissão de pacotes precisa de ter um tempo de resposta curto para garantir a
-    redução do desempenho, porém, não tão curto como nos serviços de \textit{streaming}, por exemplo, onde a latência é crítica.
-    Manter este valor um bocado mais alto reduz a sobrecarga da CPU e tráfego de rede em comparação com intervalos mais curtos.
-    \item \textbf{\texttt{INITIAL\_WINDOW\_SIZE}}: o \textit{window size} foi definido como sendo \textbf{32 pacotes}. 
-    Este valor é suficientemente grande para lidar com tráfego inicial de médio volume, minimizando a necessidade de expansão imediata da janela. 
+    \item \textbf{\texttt{RETRANSMIT\_SLEEP\_TIME}}: intervalo de tempo, em segundos, para retransmitir pacotes não confirmados.
+    Definiu-se como \textbf{5 segundos}, permitindo uma rápida recuperação de pacotes perdidos sem causar sobrecarga excessiva na rede.
+    A definição deste valor teve em conta que a retransmissão de pacotes precisa de ter um tempo de resposta curto para garantir
+    o desempenho, porém, não tão curto como, por exemplo, nos serviços de \textit{streaming}, onde a latência é crítica.
+    Manter este valor significamente maior reduz a sobrecarga computacional e de tráfego de rede.
+    \item \textbf{\texttt{INITIAL\_WINDOW\_SIZE}}: o \textit{window size} foi definido como sendo \textbf{32 pacotes}.
+    Este valor é suficientemente para lidar com tráfego usual da aplicação, sem causar congestionamento na rede.
     \item \textbf{\texttt{MAX\_RETRANSMISSIONS}}: o limite de retransmissões máximas foi estabelecido em \textbf{3 retransmissões},
     alinhando-se a práticas comuns em sistemas tolerantes a falhas. Este valor oferece uma boa chance de recuperar pacotes perdidos sem
     introduzir sobrecarga desnecessária na rede. Um valor ligeiramente maior, como 4 ou 5, poderia melhorar a robustez, porém aumentaria
     o tráfego em situações de perda.
     \item \textbf{\texttt{MAX\_FRAGMENT\_SIZE}}: definimos o tamanho máximo de um fragmento como sendo \textbf{1000 \textit{bytes}},
-    para garantir que cada fragmento é pequeno o suficiente para incluir sobrecarga adicional (cabeçalhos de protocolo) sem exceder o 
+    para garantir que cada fragmento é pequeno o suficiente para incluir sobrecarga adicional (cabeçalhos de protocolo) sem exceder o
     \texttt{BUFFER\_SIZE}.
     \item \textbf{\texttt{MAX\_MESSAGE\_SIZE}}: definimos o tamanho máximo da mensagem como sendo \textbf{10000 \textit{bytes}},
     pois este valor é suficiente para transmitir mensagens razoavelmente grandes, enquanto mantém um número manejável de fragmentos ao dividi-las.
@@ -579,7 +581,7 @@ ficheiro \texttt{database.py} para a inserção, organização e obtenção de d
 
 \begin{minipage}{\textwidth}
     \centering
-    \includegraphics[width=0.9\textwidth]{img/db.png}
+    \includegraphics[width=\textwidth]{img/db.png}
     \captionof{figure}{Base de Dados do \textit{Network Monitoring System}}
     \label{fig:database}
 \end{minipage}
@@ -627,7 +629,7 @@ e desempenho. Algumas sugestões para trabalho futuro incluem:
     \item \textbf{Encriptação de Mensagens}: adicionar encriptação de
     mensagens para garantir a confidencialidade e integridade dos dados transmitidos entre
     o servidor e os agentes, através da incorporação do uso de \textit{nonces}
-    de forma a prevenir ataques \textit{Man-In-The-Middle}. Adicionalmente, uma forma de 
+    de forma a prevenir ataques \textit{Man-In-The-Middle}. Adicionalmente, uma forma de
     garantir a autenticidade das mensagens seria a utilização de uma autoridade de certificação
     para a emissão de certificados digitais para os agentes e o servidor, garantindo totalmente
     a confidencialidade, integridade, autenticação e não repúdio do originador.
@@ -645,7 +647,7 @@ e desempenho. Algumas sugestões para trabalho futuro incluem:
 A realização deste projeto permitiu a aplicação prática dos conhecimentos adquiridos
 durante o semestre na Unidade Curricular de \textbf{Comunicações por Computador},
 nomeadamente no que diz respeito à conceção e implementação de protocolos aplicacionais
-para a comunicação entre sistemas. 
+para a comunicação entre sistemas.
 
 A implementação do \textbf{\textit{Network Monitoring System}} permitiu a integração de
 vários conceitos e técnicas de comunicação, como a fragmentação de pacotes, retransmissão
@@ -663,27 +665,8 @@ desempenho, a sua análise gráfica e a execução de tarefas de monitorização
 eficiente e fiável, e a sua implementação permitiu a nossa perceção do quanto damos por garantidos
 os protocolos de comunicação que utilizamos diariamente.
 
-
-
 %===============================================================================
 % END CONCLUSÕES E TRABALHO FUTURO
-%===============================================================================
-
-
-%===============================================================================
-% BEGIN ANEXOS
-%===============================================================================
-
-% %% \addchap has no numbering but appears in table of contents.
-% \addchap{Anexos}
-%
-% \addsec{
-%     \href{https://google.com/}{\small [I] Exemplo de Anexo}
-%     \label{anexo:1}
-% }
-
-%===============================================================================
-% END ANEXOS
 %===============================================================================
 
 \end{document}
