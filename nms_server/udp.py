@@ -191,13 +191,11 @@ class UDP(threading.Thread):
                 print(f"Adding packet to defrag/reorder array for {agent_id}")
             return  # wait for the missing packets
 
-        # if self.verbose and self.ui.view_mode:
-        #     print(f"Possible defragmented packet: {json.dumps(packet, indent=2)}")
-
         # Based on the packet type:
         # - First connection: add the client to the clients pool
         # - Task Metric: save the metric, after parsing data (also save the agent hostname)
         # - End of connection: remove the client from the clients pool
+        # - Undefined: defragmented packet if not a window probe
         eoc_received = False
         match packet["msg_type"]:
             case self.net_task.FIRST_CONNECTION:
@@ -208,6 +206,10 @@ class UDP(threading.Thread):
                 self.ui.save_metrics(agent_id, metrics)
             case self.net_task.EOC:
                 eoc_received = True
+            case self.net_task.UNDEFINED:
+                window_probe = packet["flags"].get("window_probe", 0)
+                if window_probe == 0 and self.verbose and self.ui.view_mode:
+                    print(f"Defragmented packet: {json.dumps(packet, indent=2)}")
 
         # De/fragmentation test
         # self.send("A" * 3000, {}, self.net_task.UNDEFINED, agent_id, addr)

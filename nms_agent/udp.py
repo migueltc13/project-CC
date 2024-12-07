@@ -160,12 +160,10 @@ class UDP(threading.Thread):
                 print("Adding packet to defrag/reorder array")
             return  # wait for the missing packets
 
-        if self.verbose:
-            print(f"Possible defragmented packet: {json.dumps(packet, indent=2)}")
-
         # Based on the packet type:
         # - Send task: process the task and start running it, sending metrics back to the server
         # - EOC (End of Connection): send a ACK and shutdown the agent
+        # - Undefined: defragmented packet if not a window probe
         eoc_received = False
         match packet["msg_type"]:
             case self.net_task.SEND_TASKS:
@@ -177,6 +175,10 @@ class UDP(threading.Thread):
                 self.client_task.add_task(data)
             case self.net_task.EOC:
                 eoc_received = True
+            case self.net_task.UNDEFINED:
+                window_probe = packet["flags"].get("window_probe", 0)
+                if window_probe == 0 and self.verbose:
+                    print(f"Defragmented packet: {json.dumps(packet, indent=2)}")
 
         if eoc_received:
             self.shutdown_flag.set()
