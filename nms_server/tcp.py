@@ -83,30 +83,30 @@ class TCP(threading.Thread):
                         match alert_type:
                             case AlertFlow.CPU_USAGE:
                                 messages.append(
-                                    f"CPU usage {alert_data["cpu_usage"]}. " +
-                                    f"Alert condition: {alert_data["alert_condition"]}"
+                                    f"CPU usage {alert_data['cpu_usage']}. " +
+                                    f"Alert condition: {alert_data['alert_condition']}"
                                 )
                             case AlertFlow.RAM_USAGE:
                                 messages.append(
-                                    f"RAM usage {alert_data["ram_usage"]}. " +
-                                    f"Alert condition: {alert_data["alert_condition"]}"
+                                    f"RAM usage {alert_data['ram_usage']}. " +
+                                    f"Alert condition: {alert_data['alert_condition']}"
                                 )
                             case AlertFlow.INTERFACE_STATS:
                                 for interface in alert_data:
                                     messages.append(
-                                        f"Interface {interface["interface"]} " +
-                                        f"received {interface["interface_stats"]} packets. " +
-                                        f"Alert condition: {interface["alert_condition"]}"
+                                        f"Interface {interface['interface']} " +
+                                        f"received {interface['interface_stats']} packets. " +
+                                        f"Alert condition: {interface['alert_condition']}"
                                     )
                             case AlertFlow.PACKET_LOSS:
                                 messages.append(
-                                    f"Packet loss {alert_data["packet_loss"]}. " +
-                                    f"Alert condition: {alert_data["alert_condition"]}"
+                                    f"Packet loss {alert_data['packet_loss']}. " +
+                                    f"Alert condition: {alert_data['alert_condition']}"
                                 )
                             case AlertFlow.JITTER:
                                 messages.append(
-                                    f"Jitter {alert_data["jitter"]}. " +
-                                    f"Alert condition: {alert_data["alert_condition"]}"
+                                    f"Jitter {alert_data['jitter']}. " +
+                                    f"Alert condition: {alert_data['alert_condition']}"
                                 )
                             case _:
                                 if self.ui.view_mode:
