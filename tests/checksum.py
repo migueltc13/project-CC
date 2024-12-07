@@ -20,9 +20,9 @@ def main():
 
     # Build the packets with different sequence numbers
     _, packet1 = NetTask.build_packet(NetTask, "Example data", 1, {"ack": 1},
-                                      NetTask.UNDEFINED, "test_agent", 32)
+                                      NetTask.UNDEFINED, "agent47", 32)
     _, packet2 = NetTask.build_packet(NetTask, "Example data", 0, {"ack": 1},
-                                      NetTask.UNDEFINED, "test_agent", 32)
+                                      NetTask.UNDEFINED, "agent47", 32)
 
     packet1 = packet1[0]
     packet2 = packet2[0]
