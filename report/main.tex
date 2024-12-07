@@ -183,7 +183,7 @@ com perdas ou duplicação de pacotes, latências elevadas e taxas de débito va
 
 Para combater tais adversidades, o protocolo aplicacional \textit{NetTask}
 responsabiliza-se pelas funcionalidades que serão exploradas no seguinte
-subcapítulo \nameref{subsec:nt_desc_funcionalidades}.
+subcapítulo \ref{subsec:nt_desc_funcionalidades}.
 
 Nos próximos subcapítulos, serão detalhadas as especificações do protocolo,
 nomeadamente o formato do cabeçalho e descrição dos respetivos campos,
@@ -208,7 +208,7 @@ comportamento do protocolo em situações normais e adversas.
         \begin{itemize}
            \item [\textbf{\textit{ACK}}] (1º \textit{bit}): \textit{Acknowledgement}, utilizado para confirmar a receção de pacotes;
            \item [\textbf{\textit{RET}}] (2º \textit{bit}): \textit{Retransmission}, indica que o pacote é uma retransmissão;
-           \item [\textbf{\textit{URG}}] (3º \textit{bit}): \textit{Urgent}, indica que a mensagem é urgente;
+           \item [\textbf{\textit{URG}}] (3º \textit{bit}): \textit{Urgent}, indica que a mensagem é urgente, esquivando-se de mecanismos de controlo de fluxo;
            \item [\textbf{\textit{WP}} ] (4º \textit{bit}): \textit{Window Probe}, utilizado para o controlo de fluxo;
            \item [\textbf{\textit{MF}} ] (5º \textit{bit}): \textit{More Fragments}, para (des)fragmentação de pacotes.
         \end{itemize}
@@ -317,7 +317,6 @@ se sobrecarrega a largura de banda com múltiplas retransmissões de pacotes.
 
 
 \textbf{Controlo de Fluxo}
-
 
 O controlo de fluxo é efetuado através do tamanho da janela de receção (\textit{Window Size}),
 indicando ao emissor o número de pacotes que o recetor pode receber sem congestionar a ligação.
