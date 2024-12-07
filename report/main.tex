@@ -509,29 +509,24 @@ de forma a que seja possível executar o teste.
 Para a implementação do \textbf{\textit{Network Monitoring System}}, foram utilizadas
 as seguintes bibliotecas em \textit{Python3}:
 
-\subsection{Bibliotecas Gerais:}
 \begin{itemize}
-    \item \textbf{\textit{socket}}: para a comunicação entre o servidor e os agentes,
+    \item \textbf{\texttt{socket}}: para a comunicação entre o servidor e os agentes,
     permitindo a troca de mensagens entre os sistemas;
-    \item \textbf{\textit{threading}}: para a execução de tarefas em \textit{threads} separadas,
+    \item \textbf{\texttt{threading}}: para a execução de tarefas em \textit{threads} separadas,
     permitindo a execução de tarefas em paralelo;
-    \item \textbf{\textit{json}}: para a codificação e descodificação de mensagens em formato JSON,
+    \item \textbf{\texttt{json}}: para a codificação e descodificação de mensagens em formato JSON,
     permitindo a transmissão de dados entre o servidor e os agentes;
-    \item \textbf{\textit{os}}: para a execução de comandos do sistema operativo, permitindo a
+    \item \textbf{\texttt{os}}: para a execução de comandos do sistema operativo, permitindo a
     recolha de métricas de desempenho dos dispositivos;
-    \item \textbf{\textit{sys}}: para a obtenção de argumentos passados na linha de comandos,
+    \item \textbf{\texttt{sys}}: para a obtenção de argumentos passados na linha de comandos,
     permitindo a definição de parâmetros de execução dos executáveis;
-    \item \textbf{\textit{matplotlib}}: para a criação de gráficos, permitindo a visualização
+    \item \textbf{\texttt{matplotlib}}: para a criação de gráficos, permitindo a visualização
     das métricas recolhidas e a sua evolução ao longo do tempo.
-\end{itemize}
-
-\subsection{Bibliotecas Específicas:}
-\begin{itemize}
-    \item \textbf{\textit{psutil}}: para a recolha de métricas de desempenho dos dispositivos,
+    \item \textbf{\texttt{psutil}}: para a recolha de métricas de desempenho dos dispositivos,
     permitindo a obtenção de informações sobre a utilização da CPU, memória RAM e interfaces de rede;
-    \item \textbf{\textit{iperf3}}: para a execução de testes de largura de banda e \textit{jitter},
+    \item \textbf{\texttt{iperf3}}: para a execução de testes de largura de banda e \textit{jitter},
     permitindo a obtenção de informações sobre esses dados entre sistemas.
-    \item \textbf{\textit{subprocess}}: utilizado para correr o comando nativo \textit{ping}, obtendo
+    \item \textbf{\texttt{subprocess}}: utilizado para correr o comando nativo \textit{ping}, obtendo
     o \textit{return code} e o \textit{output} do comando.
 \end{itemize}
 
@@ -546,26 +541,20 @@ configuração do sistema de forma mais simples e centralizada. Estas constantes
 são definidas no ficheiro \texttt{constants.py}, e são as seguintes:
 \begin{itemize}
     \item \textbf{\texttt{RETRANSMIT\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de retransmitir pacotes não confirmados.
-    Definimos como sendo \textbf{5 segundos}, permitindo uma rápida recuperação de pacotes perdidos sem causar sobrecarga excessiva na rede.
+    Definiu-se como sendo \textbf{5 segundos}, permitindo uma rápida recuperação de pacotes perdidos sem causar sobrecarga excessiva na rede.
     Este valor foi escolhido tendo em conta que a retransmissão de pacotes precisa de ter um tempo de resposta curto para garantir a
     redução do desempenho, porém, não tão curto como nos serviços de \textit{streaming}, por exemplo, onde a latência é crítica.
     Manter este valor um bocado mais alto reduz a sobrecarga da CPU e tráfego de rede em comparação com intervalos mais curtos.
     \item \textbf{\texttt{INITIAL\_WINDOW\_SIZE}}: o \textit{window size} foi definido como sendo \textbf{32 pacotes}. 
     Este valor é suficientemente grande para lidar com tráfego inicial de médio volume, minimizando a necessidade de expansão imediata da janela. 
-    \item \textbf{\texttt{MAX\_RETRANSMISSIONS}}: o limite de retransmissões máximas foi estabelecido em \textbf{3 retransmissões},
-    alinhando-se a práticas comuns em sistemas tolerantes a falhas. Este valor oferece uma boa chance de recuperar pacotes perdidos sem
-    introduzir sobrecarga desnecessária na rede. Um valor ligeiramente maior, como 4 ou 5, poderia melhorar a robustez, porém aumentaria
-    o tráfego em situações de perda.
-    \item \textbf{\texttt{MAX\_FRAGMENT\_SIZE}}: definimos o tamanho máximo de um fragmento como sendo \textbf{1000 \textit{bytes}},
-    para garantir que cada fragmento é pequeno o suficiente para incluir sobrecarga adicional (cabeçalhos de protocolo) sem exceder o 
-    \texttt{BUFFER\_SIZE}.
-    \item \textbf{\texttt{MAX\_MESSAGE\_SIZE}}: definimos o tamanho máximo da mensagem como sendo \textbf{10000 \textit{bytes}},
-    pois este valor é suficiente para transmitir mensagens razoavelmente grandes, enquanto mantém um número manejável de fragmentos ao dividi-las.
-    Caso alcance este valor, a mensagem seria fragmentada em 10 fragmentos de 1000 \textit{bytes} cada.
-    \item \textbf{\texttt{MAX\_WINDOW\_SIZE}}: o \textit{window size} máximo é o dobro do seu tamanho inicial - \textbf{64 pacotes}.
-    Este valor foi escolhido para permitir uma expansão moderada da janela de receção, sem permitir que a esta cresça indefinidamente.
+    \item \textbf{\texttt{ENCODING}}: a codificação de mensagens foi pré-definida como \textbf{\textit{UTF-8}}, podendo esta ser configurável, 
+    como, por exemplo, \textit{ASCII}, \textit{ISO-8859-1}, entre outras;
+    \item \textbf{\texttt{BUFFER\_SIZE}}: o tamanho máximo de um pacote foi definido como sendo \textbf{1500 \textit{bytes}},
+    que é o valor máximo para o \textit{Maximum Transmission Unit} (MTU) de uma rede Ethernet;
+    \item \textbf{\texttt{SO\_NO\_CHECK}}: definido como \textbf{11}, este valor específico desativa o cálculo do \textit{checksum} em
+    pacotes UDP, permitindo a aplicação de um controlo de erros personalizado;
     \item \textbf{\texttt{WINDOW\_PROBE\_SLEEP\_TIME}}: intervalo de tempo, em segundos, antes de verificar o \textit{window size}.
-    Foi definido como \textbf{10 segundos}, permitindo uma verificação regular da janela de receção sem causar sobrecarga excessiva na rede.
+    Definiu-se como sendo \textbf{10 segundos}, permitindo uma verificação regular da janela de receção sem causar sobrecarga excessiva na rede.
     \item \textbf{\texttt{EOC\_ACK\_TIMEOUT}}: tempo máximo de espera para o recebimento de confirmações de término de conexão, em segundos.
     O intervalo foi definido como \textbf{10 segundos} para garantir que as conexões sejam encerradas rapidamente, sem causar atrasos
     desnecessários na execução do sistema, nem permitir que as conexões sejam encerradas prematuramente.
@@ -590,6 +579,49 @@ Foi implementada uma funcionalidade de análise gráfica de dados, permitindo a 
 das diferentes métricas recolhidas e a sua evolução ao longo do tempo. Foi utilizada a biblioteca
 \textit{matplotlib} para a criação dos gráficos, e criado o ficheiro \texttt{analysis.py} para a execução
 desta funcionalidade. Segue-se exemplos de gráficos gerados:
+
+\begin{minipage}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/analysis/bandwidth.png}
+    \captionof{figure}{Gráfico de \textit{Bandwidth}}
+    \label{fig:bandwidth}
+\end{minipage}
+\hfill
+\begin{minipage}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/analysis/packet_loss.png}
+    \captionof{figure}{Gráfico de \textit{Packet Loss}}
+    \label{fig:packet_loss}
+\end{minipage}
+
+\begin{minipage}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/analysis/jitter.png}
+    \captionof{figure}{Gráfico de \textit{Jitter}}
+    \label{fig:jitter}
+\end{minipage}
+\hfill
+\begin{minipage}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/analysis/latency.png}
+    \captionof{figure}{Gráfico de Latência}
+    \label{fig:latency}
+\end{minipage}
+
+\begin{minipage}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/analysis/cpu_usage.png}
+    \captionof{figure}{Gráfico de Utilização da CPU}
+    \label{fig:cpu_usage}
+\end{minipage}
+\hfill
+\begin{minipage}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/analysis/ram_usage.png}
+    \captionof{figure}{Gráfico de Utilização de RAM}
+    \label{fig:ram_usage}
+\end{minipage}
+
 
 %===============================================================================
 % END IMPLEMENTAÇÃO
