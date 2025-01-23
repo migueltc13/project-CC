@@ -6,7 +6,7 @@ implemented in Python within Computer Communications environment in 2024/2025 ac
 - [Project Requirements](project.pdf)
 - [Report](report/output/main.pdf)
 
-## Architecture
+## Project Architecture
 
 ![Architecture](report/img/architecture.png)
 
@@ -26,3 +26,16 @@ Types of Alerts:
 3. Interface Stats
 4. Packet Loss
 5. Jitter
+
+## Authors
+
+**NMS** was developed by the following team of students:
+- [Flávia Araújo](https://github.com/flaviaraujo)
+- [Joshua David](https://github.com/CheirosoOficial)
+- [Miguel Carvalho](https://github.com/migueltc13)
+
+<a href="https://github.com/migueltc13/project-CC/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=migueltc13/project-CC" />
+</a>
+
+#### Final Grade: 18/20
