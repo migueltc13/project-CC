@@ -10,7 +10,7 @@ implemented in Python within Computer Communications environment in 2024/2025 ac
 
 ![Architecture](report/img/architecture.png)
 
-## Protocolos Aplicacionais
+## Aplicacional Protocols
 
 ### *NetTask* (UDP)
 
@@ -26,10 +26,3 @@ Types of Alerts:
 3. Interface Stats
 4. Packet Loss
 5. Jitter
-
-### Libraries
-
-- json
-- iperf
-- psutil
-- subprocess
