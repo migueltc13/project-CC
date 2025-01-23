@@ -91,7 +91,7 @@ class Task(threading.Thread):
         # Parse the iperf parameters based on the mode (client or server)
         iperf_params = tools_params.get("iperf", {})
         is_client = iperf_params.get("is_client", None)
-        if is_client is None:
+        if is_client is not None:
             if is_client:
                 server = iperf_params.get("server", "0.0.0.0")
                 bind_address = iperf_params.get("bind_address", "0.0.0.0")
